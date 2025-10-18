@@ -1,0 +1,29 @@
+# Core Dependencies
+python-dotenv==1.0.0
+pandas==2.1.3
+numpy==1.26.2
+pandas-ta==0.3.14b
+
+# AI and Machine Learning
+scikit-learn==1.3.2
+hmmlearn==0.3.0
+tensorflow==2.15.0
+
+# Backtesting
+backtrader==1.9.78.123
+matplotlib==3.8.2
+
+# Broker Connection
+alpaca-py==0.12.1
+
+# Dashboard and Monitoring
+streamlit==1.28.2
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+requests==2.31.0
+
+# Data Storage (Optional)
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
