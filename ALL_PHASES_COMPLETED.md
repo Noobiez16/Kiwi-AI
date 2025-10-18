@@ -1,5 +1,12 @@
 # 🥝 Kiwi_AI - Phases Completion Summary
 
+> **📌 IMPORTANT NOTE FOR FUTURE DEVELOPMENT:**  
+> This is the SINGLE consolidated document for ALL phase completions.  
+> DO NOT create separate phase completion files (e.g., PHASE2_COMPLETE.md, PHASE3_COMPLETE.md).  
+> All phase summaries, deliverables, and test results should be added to this file.
+
+---
+
 ## ✅ Phase 1: Foundation, Security & Strategy Arsenal - COMPLETE!
 **Date Completed:** October 17, 2025
 
