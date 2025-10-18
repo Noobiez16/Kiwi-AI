@@ -10,13 +10,15 @@ Kiwi_AI is designed to overcome the limitations of static trading models by:
 - **Monitoring performance** in real-time
 - **Adapting to changing conditions** automatically
 
-## 📋 Current Status: Phase 1 Complete ✅
+## 📋 Current Status: Phase 2 Complete ✅
 
-**Latest Update:** October 17, 2025 - Phase 1 Fully Operational!
+**Latest Update:** October 18, 2025 - Phase 2: AI Brain Fully Operational!
 
-📄 **[View Phase 1 Completion Report](PHASE1_COMPLETE.md)** | 📝 **[View Full Changelog](CHANGELOG.md)**
+📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)**
 
 ### ✅ Completed Components
+
+#### Phase 1: Foundation & Strategy Arsenal ✅
 
 1. **Project Structure**
    - Full folder hierarchy established
@@ -45,6 +47,34 @@ Kiwi_AI is designed to overcome the limitations of static trading models by:
    - Centralized logging system
    - Configuration loader
    - Directory management
+
+#### Phase 2: AI Brain & Intelligence ✅
+
+6. **Regime Detection** (`/meta_ai/regime_detector.py`)
+   - Market regime classification (TREND, SIDEWAYS, VOLATILE)
+   - HMM-based detection with rule-based fallback
+   - Confidence scoring for each regime
+   - Model save/load capability
+
+7. **Performance Monitoring** (`/meta_ai/performance_monitor.py`)
+   - Real-time performance tracking
+   - Sharpe ratio calculation
+   - Maximum drawdown monitoring
+   - Win rate and profit factor metrics
+   - Performance degradation alerts
+
+8. **Strategy Selection** (`/meta_ai/strategy_selector.py`)
+   - Intelligent strategy selection based on market regime
+   - Regime-strategy suitability matrix
+   - Automatic strategy switching
+   - Performance-triggered adaptation
+   - Confidence-based decision making
+
+9. **Model Training** (`train_models.py`)
+   - Historical data training for regime detection
+   - Command-line interface with configurable parameters
+   - Model validation and persistence
+   - Quick test mode for rapid iteration
 
 ## 🚀 Quick Start
 
@@ -97,22 +127,32 @@ python config.py
 │   ├── trend_following.py
 │   ├── mean_reversion.py
 │   └── volatility_breakout.py
+├── /meta_ai                   # AI Brain (Phase 2)
+│   ├── __init__.py
+│   ├── regime_detector.py     # Market regime classification
+│   ├── performance_monitor.py # Real-time performance tracking
+│   └── strategy_selector.py   # Intelligent strategy selection
 ├── /utils                     # Utilities
 │   ├── __init__.py
 │   ├── config_loader.py
 │   └── logger.py
 ├── /test_script_phases        # Phase testing scripts
 │   ├── phase1.py             # Phase 1 demonstration
-│   ├── phase2.py             # Phase 2 tests (future)
+│   ├── phase2.py             # Phase 2 AI Brain tests
 │   ├── phase3.py             # Phase 3 tests (future)
 │   └── phase4.py             # Phase 4 tests (future)
+├── /models                    # Trained AI models (gitignored)
+│   └── regime_detector.pkl    # Trained regime detection model
+├── /market_data               # Data cache (gitignored)
+├── /backtest_reports          # Reports (gitignored)
 ├── config.py                  # Main configuration
+├── train_models.py            # Model training script
 ├── requirements.txt           # Dependencies
 ├── .gitignore                 # Git ignore rules
 ├── .env                       # Environment variables (NOT in git)
 ├── README.md                  # This file
 ├── RoadMap.txt                # Development roadmap
-├── PHASE1_COMPLETE.md         # Phase 1 completion report
+├── ALL_PHASES_COMPLETED.md    # Phase completion reports
 └── CHANGELOG.md               # Project changelog
 ```
 
@@ -121,8 +161,14 @@ python config.py
 Each module can be tested independently:
 
 ```bash
-# Run full Phase 1 demonstration
+# Run Phase 1 demonstration
 python test_script_phases/phase1.py
+
+# Run Phase 2 demonstration (AI Brain)
+python test_script_phases/phase2.py
+
+# Train regime detection models
+python train_models.py --years 2 --quick-test
 
 # Test configuration
 python config.py
@@ -135,10 +181,13 @@ python strategies/trend_following.py
 python strategies/mean_reversion.py
 python strategies/volatility_breakout.py
 
-# Test logger
-python utils/logger.py
+# Test AI components
+python meta_ai/regime_detector.py
+python meta_ai/performance_monitor.py
+python meta_ai/strategy_selector.py
 
-# Test config loader
+# Test utilities
+python utils/logger.py
 python utils/config_loader.py
 ```
 
@@ -150,7 +199,7 @@ Test the complete functionality of each phase:
 # Phase 1: Foundation & Strategies
 python test_script_phases/phase1.py
 
-# Phase 2: AI & Backtesting (Coming soon)
+# Phase 2: AI Brain & Intelligence
 python test_script_phases/phase2.py
 
 # Phase 3: Live Trading (Coming soon)
@@ -201,20 +250,22 @@ INITIAL_CAPITAL="100000"
 
 ## 🗺️ Development Roadmap
 
-- ✅ **Phase 1:** Foundation & Strategy Arsenal (COMPLETE) - [Details](PHASE1_COMPLETE.md)
-- ⏳ **Phase 2:** AI Brain & Backtesting Engine (NEXT)
-- 🔜 **Phase 3:** Market Connection & Live Simulation
-- 🔜 **Phase 4:** Deployment & Production
+- ✅ **Phase 1:** Foundation & Strategy Arsenal (COMPLETE) - [Details](ALL_PHASES_COMPLETED.md)
+- ✅ **Phase 2:** AI Brain & Intelligence (COMPLETE) - [Details](ALL_PHASES_COMPLETED.md)
+- ⏳ **Phase 3:** Backtesting Engine & Optimization (NEXT)
+- 🔜 **Phase 4:** Live Trading & Production Deployment
 
 📄 **[View Full Roadmap](RoadMap.txt)** | 📝 **[View Changelog](CHANGELOG.md)**
 
 ## 📊 Project Status
 
-**Current Version:** 0.1.0  
+**Current Version:** 0.2.0  
 **Phase 1 Completion:** October 17, 2025  
-**Total Lines of Code:** 2,350+  
-**Test Coverage:** 100% for Phase 1  
-**Strategies Implemented:** 3
+**Phase 2 Completion:** October 18, 2025  
+**Total Lines of Code:** 3,900+  
+**Test Coverage:** 100% for Phase 1 & 2  
+**Strategies Implemented:** 3  
+**AI Components:** 3 (Regime Detector, Performance Monitor, Strategy Selector)
 
 ## 🤝 Contributing
 
@@ -258,4 +309,4 @@ Feel free to open issues, submit PRs, or reach out with questions and suggestion
 
 **Built with 💚 by the Kiwi_AI Team**
 
-Last Updated: October 17, 2025
+Last Updated: October 18, 2025
