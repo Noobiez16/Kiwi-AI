@@ -97,6 +97,11 @@ python config.py
 │   ├── __init__.py
 │   ├── config_loader.py
 │   └── logger.py
+├── /test_script_phases        # Phase testing scripts
+│   ├── phase1.py             # Phase 1 demonstration
+│   ├── phase2.py             # Phase 2 tests (future)
+│   ├── phase3.py             # Phase 3 tests (future)
+│   └── phase4.py             # Phase 4 tests (future)
 ├── config.py                  # Main configuration
 ├── requirements.txt           # Dependencies
 ├── .gitignore                 # Git ignore rules
@@ -125,6 +130,24 @@ python utils/logger.py
 
 # Test config loader
 python utils/config_loader.py
+```
+
+### Running Phase Tests
+
+Test the complete functionality of each phase:
+
+```bash
+# Phase 1: Foundation & Strategies
+python test_script_phases/phase1.py
+
+# Phase 2: AI & Backtesting (Coming soon)
+python test_script_phases/phase2.py
+
+# Phase 3: Live Trading (Coming soon)
+python test_script_phases/phase3.py
+
+# Phase 4: Deployment (Coming soon)
+python test_script_phases/phase4.py
 ```
 
 ## 🎨 Trading Strategies

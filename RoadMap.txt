@@ -58,6 +58,12 @@ configuration to deployment in a real environment.
 │   ├── config_loader.py      # Loads and validates configuration from .env and config.py
 │   └── logger.py             # Centralized logging configuration
 │
+├── /test_script_phases       # Phase testing scripts
+│   ├── phase1.py             # Test script for Phase 1 components
+│   ├── phase2.py             # Test script for Phase 2 components (future)
+│   ├── phase3.py             # Test script for Phase 3 components (future)
+│   └── phase4.py             # Test script for Phase 4 components (future)
+│
 ├── config.py                 # Public configuration and secrets loading
 ├── main.py                   # Entry point for live trading
 ├── run_backtest.py           # Script to execute historical simulations
