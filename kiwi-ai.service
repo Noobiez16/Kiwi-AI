@@ -1,0 +1,62 @@
+# Kiwi_AI Systemd Service File
+# 
+# Installation:
+# 1. Copy to /etc/systemd/system/kiwi-ai.service
+# 2. sudo systemctl daemon-reload
+# 3. sudo systemctl enable kiwi-ai
+# 4. sudo systemctl start kiwi-ai
+#
+# Usage:
+# - Start: sudo systemctl start kiwi-ai
+# - Stop: sudo systemctl stop kiwi-ai
+# - Restart: sudo systemctl restart kiwi-ai
+# - Status: sudo systemctl status kiwi-ai
+# - Logs: sudo journalctl -u kiwi-ai -f
+
+[Unit]
+Description=Kiwi_AI Advanced Adaptive Algorithmic Trading System
+Documentation=https://github.com/yourusername/Kiwi_AI
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=docker
+WorkingDirectory=/home/ubuntu/Kiwi_AI
+
+# Start command
+ExecStart=/usr/local/bin/docker-compose up
+
+# Stop command
+ExecStop=/usr/local/bin/docker-compose down
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=5min
+StartLimitBurst=3
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Environment
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=-/home/ubuntu/Kiwi_AI/.env
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kiwi-ai
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ubuntu/Kiwi_AI/logs /home/ubuntu/Kiwi_AI/models /home/ubuntu/Kiwi_AI/market_data /home/ubuntu/Kiwi_AI/backtest_reports
+
+[Install]
+WantedBy=multi-user.target

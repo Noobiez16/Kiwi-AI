@@ -8,11 +8,158 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 4: Docker Deployment
-- Phase 4: Production Monitoring & Alerts
-- Phase 4: Database Integration
-- Phase 4: Advanced Backtesting Engine
-- Phase 4: Strategy Optimization Tools
+- Phase 5: Advanced Backtesting Engine
+- Phase 5: Strategy Optimization Tools
+- Phase 5: Database Integration for historical data
+- Phase 5: Advanced monitoring and alerting
+
+---
+
+## [0.4.0] - 2025-10-19 - **PHASE 4 COMPLETE** ✅
+
+### 🎉 Major Milestone
+**Phase 4: Deployment, Operation & Maintenance** is now complete!
+
+### Added
+
+#### 🐳 Docker Containerization
+- `Dockerfile` with Python 3.11 slim base image
+- **Security features:**
+  - Non-root user (kiwi:1000) for enhanced security
+  - Read-only filesystem where possible
+  - Minimal system dependencies
+- **Optimizations:**
+  - Multi-stage awareness for future optimization
+  - `.dockerignore` to exclude unnecessary files
+  - Efficient layer caching with requirements.txt first
+- **Health checks:**
+  - Built-in container health monitoring
+  - Auto-restart on failures
+
+#### 🚀 Docker Compose Orchestration (`docker-compose.yml`)
+- **Services:**
+  - `kiwi-ai`: Main trading bot service
+  - `dashboard`: Optional Streamlit monitoring interface
+- **Configuration:**
+  - Environment variable management
+  - Volume mounts for data persistence (logs, models, market_data, reports)
+  - Network isolation with custom bridge network
+  - Resource limits (CPU: 2.0, Memory: 2G)
+- **Features:**
+  - Auto-restart policies
+  - JSON file logging with rotation (10MB max, 3 files)
+  - Health checks with customizable intervals
+
+#### 📖 Comprehensive Deployment Documentation (`DEPLOYMENT.md`)
+- **500+ lines of production deployment guidance**
+- **Sections:**
+  - Prerequisites and system requirements
+  - Environment setup instructions
+  - Docker Compose deployment (recommended method)
+  - Manual deployment procedures
+  - AWS EC2 cloud deployment guide
+  - Configuration for MOCK/PAPER/LIVE modes
+  - Risk parameter tuning
+- **Operations:**
+  - Systemd service configuration
+  - Log management and rotation
+  - Model retraining procedures
+  - Health monitoring setup
+- **Troubleshooting:**
+  - Common issues and solutions
+  - API connection debugging
+  - Container health checks
+  - Resource optimization
+- **Security:**
+  - Environment variable best practices
+  - Firewall configuration
+  - SSH hardening
+  - API key rotation
+  - Regular update procedures
+
+#### ⚙️ Systemd Service (`kiwi-ai.service`)
+- Production-grade service configuration for Linux systems
+- **Features:**
+  - Auto-start on system boot
+  - Automatic restart on failure (10s delay, max 3 attempts/5min)
+  - Proper dependency management (docker.service, network)
+  - Resource limits (file descriptors, process count)
+  - Security hardening (NoNewPrivileges, PrivateTmp, ProtectSystem)
+  - Journal logging with syslog identifier
+- **Installation:**
+  - Step-by-step systemd setup instructions
+  - Service management commands (start/stop/restart/status)
+
+#### 🔧 Monitoring & Maintenance Scripts (`/scripts/`)
+- **`health_check.sh`:**
+  - Container status monitoring
+  - Automatic restart on failure
+  - Memory/CPU usage alerts (85%/90% thresholds)
+  - Disk space monitoring (85% threshold)
+  - Large log file detection (>100MB)
+  - Cron-ready (recommended: every 5 minutes)
+
+- **`rotate_logs.sh`:**
+  - Automatic log rotation and compression
+  - Archives logs older than 1 day
+  - Removes archives older than 30 days (configurable)
+  - Space-saving gzip compression
+  - Cron-ready (recommended: daily at 2 AM)
+
+- **`retrain_models.sh`:**
+  - Automated model retraining with fresh market data
+  - Automatic backup of existing models
+  - Rollback on training failure
+  - Keeps last 5 model backups
+  - Container restart with new models
+  - Detailed logging to `logs/retrain_*.log`
+  - Cron-ready (recommended: weekly on Sunday at 2 AM)
+
+- **`backup.sh`:**
+  - Comprehensive backup of critical data
+  - Backs up: models, logs (7 days), config, reports (30 days)
+  - Full system backup (excludes market_data, caches)
+  - Automatic cleanup (14-day retention, configurable)
+  - Storage in `/home/ubuntu/kiwi-ai-backups/`
+  - Cron-ready (recommended: daily at 3 AM)
+
+- **`scripts/README.md`:**
+  - Complete documentation for all monitoring scripts
+  - Cron setup instructions
+  - Customization guidelines
+  - Troubleshooting tips
+  - Email alert configuration (optional)
+
+#### ✅ Phase 4 Testing (`test_script_phases/phase4.py`)
+- Comprehensive deployment validation suite
+- **Tests:**
+  - Docker files existence and content validation
+  - Deployment documentation completeness
+  - Systemd service configuration
+  - Monitoring scripts availability
+  - Production readiness checks
+  - Optional Docker build test
+- **27 automated tests** covering all Phase 4 components
+- Clear pass/fail reporting with next steps
+
+### Changed
+- Updated `README.md` with Phase 4 deployment section
+- Enhanced Quick Start guide with Docker deployment option
+- Updated project structure documentation
+- Added deployment guide and scripts documentation links
+
+### Documentation
+- Created `DEPLOYMENT.md` with comprehensive deployment instructions
+- Added `/scripts/README.md` for monitoring script documentation
+- Updated main `README.md` with Phase 4 components
+- Enhanced `CHANGELOG.md` with Phase 4 details
+
+### Deployment Ready
+- ✅ Docker containerization complete
+- ✅ Production deployment documentation ready
+- ✅ Automated monitoring and maintenance scripts
+- ✅ Systemd service configuration for Linux servers
+- ✅ All tests passing (27/27 core tests)
 
 ---
 

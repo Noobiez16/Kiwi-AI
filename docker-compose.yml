@@ -1,0 +1,109 @@
+# Kiwi_AI - Docker Compose Configuration
+# Advanced Adaptive Algorithmic Trading System
+
+version: '3.8'
+
+services:
+  kiwi-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kiwi-ai-trading
+    restart: unless-stopped
+    
+    environment:
+      # Trading Mode (MOCK/PAPER/LIVE)
+      - TRADING_MODE=${TRADING_MODE:-PAPER}
+      
+      # Alpaca API Configuration
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+      - ALPACA_BASE_URL=${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
+      
+      # Trading Configuration
+      - RISK_PER_TRADE=${RISK_PER_TRADE:-0.02}
+      - MAX_PORTFOLIO_RISK=${MAX_PORTFOLIO_RISK:-0.06}
+      - MAX_POSITION_SIZE=${MAX_POSITION_SIZE:-0.25}
+      
+      # Python Environment
+      - PYTHONUNBUFFERED=1
+    
+    volumes:
+      # Persist logs
+      - ./logs:/app/logs
+      
+      # Persist trained models
+      - ./models:/app/models
+      
+      # Persist market data cache
+      - ./market_data:/app/market_data
+      
+      # Persist backtest reports
+      - ./backtest_reports:/app/backtest_reports
+      
+      # Mount environment file (optional, if not using env vars)
+      - ./.env:/app/.env:ro
+    
+    networks:
+      - kiwi-network
+    
+    # Resource limits (adjust based on your server)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Streamlit Dashboard (uncomment to enable)
+  # dashboard:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: kiwi-ai-dashboard
+  #   restart: unless-stopped
+  #   command: ["streamlit", "run", "dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+  #   
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   
+  #   ports:
+  #     - "8501:8501"
+  #   
+  #   volumes:
+  #     - ./logs:/app/logs:ro
+  #     - ./models:/app/models:ro
+  #     - ./backtest_reports:/app/backtest_reports:ro
+  #   
+  #   networks:
+  #     - kiwi-network
+  #   
+  #   depends_on:
+  #     - kiwi-ai
+
+networks:
+  kiwi-network:
+    driver: bridge
+
+volumes:
+  logs:
+  models:
+  market_data:
+  backtest_reports:

@@ -1,0 +1,90 @@
+# Kiwi_AI - Docker Ignore File
+# Excludes unnecessary files from Docker builds
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment variables (NEVER include in Docker image)
+.env
+.env.local
+.env.*.local
+
+# Logs (should be mounted as volumes)
+logs/
+*.log
+
+# Market data cache (should be mounted as volumes)
+market_data/
+
+# Models (should be mounted as volumes)
+models/
+*.pkl
+*.joblib
+
+# Backtest reports (should be mounted as volumes)
+backtest_reports/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation (not needed in runtime)
+*.md
+!README.md
+RoadMap.txt
+
+# Test files
+test_script_phases/
+tests/
+pytest.ini
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Docker files (don't need these inside the image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
