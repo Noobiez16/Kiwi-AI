@@ -39,7 +39,7 @@
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/yourusername/Kiwi_AI.git
+git clone https://github.com/Noobiez16/Kiwi_AI.git
 cd Kiwi_AI
 ```
 

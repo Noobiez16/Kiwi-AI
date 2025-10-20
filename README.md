@@ -1,20 +1,79 @@
-# 🥝 Kiwi_AI - Advanced Adaptive Algorithmic Trading System
+# 🥝 Kiwi AI - Advanced Adaptive Algorithmic Trading System
 
 An intelligent meta-strategy trading system that uses artificial intelligence to dynamically select the most suitable trading strategy based on current market conditions.
 
 ## 🎯 Project Overview
 
-Kiwi_AI is designed to overcome the limitations of static trading models by:
+Kiwi AI is designed to overcome the limitations of static trading models by:
 - **Detecting market regimes** (trending, sideways, volatile)
 - **Dynamically selecting strategies** from a diverse arsenal
 - **Monitoring performance** in real-time
 - **Adapting to changing conditions** automatically
+- **Real-time data streaming** via WebSocket ⭐ NEW!
+- **Live visual dashboard** with interactive charts ⭐ NEW!
 
-## 📋 Current Status: Phase 4 Complete ✅
+## 🚀 Quick Start
 
-**Latest Update:** October 19, 2025 - Phase 4: Deployment & Production Ready!
+### ONE File - ONE Command ⭐ NEW!
+
+Everything is now consolidated into **`run_kiwi.py`** - a visual, user-friendly application!
+
+```bash
+# Just run this ONE command:
+python run_kiwi.py
+
+# Or with streamlit directly:
+streamlit run run_kiwi.py
+```
+
+**That's it!** The web dashboard opens at http://localhost:8501
+
+### ✨ No Coding Required!
+
+The app includes a **visual settings manager** - configure everything through the web interface:
+
+1. **Settings Tab** - Configure API keys, trading parameters, risk settings
+2. **Control Tab** - Start/stop trading with one click (Daily or Real-Time mode)
+3. **Dashboard Tab** - Monitor live performance, positions, P&L
+4. **Help Tab** - Complete documentation built-in
+
+**Perfect for non-coders!** All configuration is visual - no terminal commands or .env file editing needed.
+
+### 📊 Features
+
+- **Daily Mode** - Periodic checks (swing trading)
+- **Real-Time Mode** - Live WebSocket streaming (day trading)
+- **Visual Settings** - Configure everything in the browser
+- **Live Dashboard** - Real-time monitoring and metrics
+- **Risk Management** - Built-in safety features
+- **Paper Trading** - Test with fake money first
+
+📖 **[Quick Start Guide](QUICKSTART.md)** - Concise usage reference
+
+## � Current Status: Phase 4+ Complete ✅
+
+**Latest Update:** October 20, 2025 - Real-Time Trading & Live Visualization Integrated!
 
 📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)** | 🚀 **[Deployment Guide](DEPLOYMENT.md)**
+
+### ✨ New Real-Time Features (Integrated into main.py)
+
+#### 📡 Real-Time Trading Mode ⭐
+- **WebSocket Streaming** - Live market data via Alpaca WebSocket API
+- **Multi-Symbol Support** - Trade multiple assets simultaneously
+- **Flexible Timeframes** - 1Min, 5Min, 15Min, 1Hour bars
+- **Instant Signals** - Sub-second signal generation from live data
+- **Auto-Execution** - Automated trade execution on signals
+- **Position Tracking** - Real-time position management
+- **Performance Monitoring** - Live performance metrics
+
+#### 📊 Enhanced Dashboard ⭐
+- **Account Overview** - Real-time portfolio value and P&L
+- **Position Tracking** - Open positions with entry prices
+- **Performance Metrics** - Sharpe ratio, drawdown, win rate
+- **Market Intelligence** - Live regime detection and confidence scores
+- **Strategy Display** - Active strategy and signal generation
+- **Auto-Refresh** - Configurable refresh intervals (1-30 seconds)
 
 ### ✅ Completed Components
 
@@ -218,63 +277,85 @@ python config.py
 
 ```
 /Kiwi_AI
+├── 🎯 MAIN APPLICATION (Run this!)
+│   └── run_kiwi.py            # ⭐ ALL-IN-ONE Application with Web Dashboard
+│                              # - Visual settings manager (no .env editing!)
+│                              # - Daily + Real-Time trading modes
+│                              # - Live monitoring dashboard
+│                              # - Built-in help and documentation
+│                              # - Start/stop trading with one click
+│
 ├── /data                      # Market data handling
 │   ├── __init__.py
-│   └── data_handler.py
+│   └── data_handler.py        # Fetch historical data, technical indicators
+│
 ├── /strategies                # Trading strategies
 │   ├── __init__.py
-│   ├── base_strategy.py
-│   ├── trend_following.py
-│   ├── mean_reversion.py
-│   └── volatility_breakout.py
-├── /meta_ai                   # AI Brain (Phase 2)
+│   ├── base_strategy.py       # Abstract base class
+│   ├── trend_following.py     # Moving average crossover
+│   ├── mean_reversion.py      # RSI + Bollinger Bands
+│   └── volatility_breakout.py # ATR + Donchian Channels
+│
+├── /meta_ai                   # AI Brain
 │   ├── __init__.py
-│   ├── regime_detector.py     # Market regime classification
+│   ├── regime_detector.py     # Market regime classification (TREND/SIDEWAYS/VOLATILE)
 │   ├── performance_monitor.py # Real-time performance tracking
 │   └── strategy_selector.py   # Intelligent strategy selection
-├── /execution                 # Execution & Trading (Phase 3)
+│
+├── /execution                 # Execution & Trading
 │   ├── __init__.py
-│   ├── broker_interface.py    # Multi-broker abstraction
+│   ├── broker_interface.py    # Alpaca API integration (paper/live trading)
 │   └── risk_manager.py        # Position sizing & risk management
-├── /scripts                   # Deployment scripts (Phase 4)
+│
+├── /scripts                   # Operational scripts
 │   ├── health_check.sh        # Container health monitoring
-│   ├── rotate_logs.sh         # Log rotation
+│   ├── rotate_logs.sh         # Log rotation and compression
 │   ├── retrain_models.sh      # Automated model retraining
 │   ├── backup.sh              # Automated backups
 │   └── README.md              # Scripts documentation
+│
 ├── /utils                     # Utilities
 │   ├── __init__.py
-│   ├── config_loader.py
-│   └── logger.py
+│   ├── config_loader.py       # Configuration management
+│   └── logger.py              # Centralized logging
+│
 ├── /test_script_phases        # Phase testing scripts
-│   ├── phase1.py             # Phase 1 testing
-│   ├── phase2.py             # Phase 2 testing
-│   ├── phase3.py             # Phase 3 testing
-│   └── phase4.py             # Phase 4 testing (deployment)
-│   ├── phase2.py             # Phase 2 AI Brain tests
-│   ├── phase3.py             # Phase 3 tests (future)
-│   └── phase4.py             # Phase 4 tests (future)
+│   ├── phase1.py              # Phase 1: Foundation tests
+│   ├── phase2.py              # Phase 2: AI Brain tests
+│   ├── phase3.py              # Phase 3: Execution tests
+│   └── phase4.py              # Phase 4: Deployment tests
+│
 ├── /models                    # Trained AI models (gitignored)
 │   └── regime_detector.pkl    # Trained regime detection model
 ├── /market_data               # Data cache (gitignored)
-├── /backtest_reports          # Reports (gitignored)
-├── config.py                  # Main configuration
-├── main.py                    # Main trading system
-├── dashboard.py               # Streamlit monitoring dashboard
+├── /backtest_reports          # Backtest reports (gitignored)
+│
+├── config.py                  # Configuration loader (reads .env)
 ├── train_models.py            # Model training script
+│
 ├── Dockerfile                 # Docker container configuration
 ├── docker-compose.yml         # Multi-container orchestration
 ├── .dockerignore              # Docker build exclusions
 ├── kiwi-ai.service            # Systemd service file
-├── DEPLOYMENT.md              # Comprehensive deployment guide
-├── requirements.txt           # Dependencies
+│
+├── requirements.txt           # Python dependencies
 ├── .gitignore                 # Git ignore rules
-├── .env                       # Environment variables (NOT in git)
-├── README.md                  # This file
+├── .env                       # Environment variables (optional - can configure via UI)
+│
+├── README.md                  # This file - Project documentation
+├── QUICKSTART.md              # Quick reference guide
+├── DEPLOYMENT.md              # Deployment guide (Docker, AWS, systemd)
 ├── RoadMap.txt                # Development roadmap
 ├── ALL_PHASES_COMPLETED.md    # Phase completion reports
-└── CHANGELOG.md               # Project changelog
+├── CHANGELOG.md               # Project changelog
+└── LICENSE                    # MIT License
 ```
+
+**Key Changes:**
+- ✅ `run_kiwi.py` - Single entry point with everything integrated
+- ❌ `main.py` - Removed (functionality merged into run_kiwi.py)
+- ❌ `dashboard.py` - Removed (functionality merged into run_kiwi.py)
+- 🎨 Visual settings manager - No coding required!
 
 ## 🧪 Testing Individual Components
 
@@ -402,7 +483,7 @@ This software is for educational purposes only. Trading involves substantial ris
 
 MIT License
 
-Copyright (c) 2025 Kiwi_AI
+Copyright (c) 2025 Kiwi AI
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -430,6 +511,6 @@ Feel free to open issues, submit PRs, or reach out with questions and suggestion
 
 ---
 
-**Built with 💚 by the Kiwi_AI Team**
+**Built with 💚 by the Kiwi AI Team**
 
 Last Updated: October 18, 2025
