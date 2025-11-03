@@ -1,8 +1,8 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║                    🥝 KIWI AI TRADING SYSTEM v1.0                           ║
-║                    Advanced Adaptive Algorithmic Trading                     ║
+║                    🥝 KIWI AI TRADING SYSTEM v2.0                           ║
+║          Advanced Real-Time Algorithmic Trading with TradingView            ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -11,18 +11,21 @@ Main Application Launcher
 This is the ONLY file you need to run!
 
 Usage:
-    python run_kiwi.py
+    streamlit run run_kiwi.py
 
 Features:
-- Visual Web Dashboard with Settings Manager
-- Daily and Real-Time trading modes
-- Easy configuration (no coding required!)
-- Real-time monitoring
-- All-in-one execution
+- 🔴 Auto-Start Real-Time Trading
+- 📊 TradingView Charts Integration
+- 🌍 Multi-Asset Support (Stocks, Forex, Crypto, Indices)
+- 🧠 AI-Powered Market Analysis
+- 🛡️ Advanced Risk Management
+- 📈 Professional Web Dashboard
+- ⚙️ Easy Configuration (no coding required!)
 
 """
 
 import os
+print("Script execution started...")
 import sys
 import time
 import signal
@@ -33,6 +36,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from collections import deque
 import json
+import plotly.graph_objects as go
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -69,24 +73,297 @@ except ImportError:
 # Initialize logger
 logger = TradingLogger()
 
-# Global state for trading system
+# Global state for trading system - using Streamlit session state to persist across reruns
 class TradingState:
     """Global trading state manager."""
     def __init__(self):
-        self.running = False
-        self.mode = None  # 'daily' or 'realtime'
-        self.thread = None
-        self.broker = None
-        self.positions = []
-        self.account = {}
-        self.current_regime = "Unknown"
-        self.current_strategy = "None"
-        self.performance_metrics = {}
-        self.recent_trades = []
-        self.log_messages = []
-        self.error_log = []  # Track all errors
+        # Check if already initialized in session state
+        if 'initialized' not in st.session_state:
+            st.session_state.running = False
+            st.session_state.mode = None  # 'daily' or 'realtime'
+            st.session_state.thread = None
+            st.session_state.broker = None
+            st.session_state.positions = []
+            st.session_state.account = {}
+            st.session_state.current_regime = "Unknown"
+            st.session_state.current_strategy = "None"
+            st.session_state.performance_metrics = {}
+            st.session_state.recent_trades = []
+            st.session_state.log_messages = []
+            st.session_state.error_log = []
+            st.session_state.stream = None
+            st.session_state.bar_history = []
+            st.session_state.last_signal = None
+            st.session_state.position_state = None
+            st.session_state.notification = None
+            st.session_state.initialized = True
+    
+    @property
+    def running(self):
+        return st.session_state.get('running', False)
+    
+    @running.setter
+    def running(self, value):
+        st.session_state.running = value
+    
+    @property
+    def mode(self):
+        return st.session_state.get('mode', None)
+    
+    @mode.setter
+    def mode(self, value):
+        st.session_state.mode = value
+    
+    @property
+    def thread(self):
+        return st.session_state.get('thread', None)
+    
+    @thread.setter
+    def thread(self, value):
+        st.session_state.thread = value
+    
+    @property
+    def broker(self):
+        return st.session_state.get('broker', None)
+    
+    @broker.setter
+    def broker(self, value):
+        st.session_state.broker = value
+    
+    @property
+    def positions(self):
+        return st.session_state.get('positions', [])
+    
+    @positions.setter
+    def positions(self, value):
+        st.session_state.positions = value
+    
+    @property
+    def account(self):
+        return st.session_state.get('account', {})
+    
+    @account.setter
+    def account(self, value):
+        st.session_state.account = value
+    
+    @property
+    def current_regime(self):
+        return st.session_state.get('current_regime', "Unknown")
+    
+    @current_regime.setter
+    def current_regime(self, value):
+        st.session_state.current_regime = value
+    
+    @property
+    def current_strategy(self):
+        return st.session_state.get('current_strategy', "None")
+    
+    @current_strategy.setter
+    def current_strategy(self, value):
+        st.session_state.current_strategy = value
+    
+    @property
+    def performance_metrics(self):
+        return st.session_state.get('performance_metrics', {})
+    
+    @performance_metrics.setter
+    def performance_metrics(self, value):
+        st.session_state.performance_metrics = value
+    
+    @property
+    def recent_trades(self):
+        return st.session_state.get('recent_trades', [])
+    
+    @recent_trades.setter
+    def recent_trades(self, value):
+        st.session_state.recent_trades = value
+    
+    @property
+    def log_messages(self):
+        return st.session_state.get('log_messages', [])
+    
+    @log_messages.setter
+    def log_messages(self, value):
+        st.session_state.log_messages = value
+    
+    @property
+    def error_log(self):
+        return st.session_state.get('error_log', [])
+    
+    @error_log.setter
+    def error_log(self, value):
+        st.session_state.error_log = value
+    
+    @property
+    def stream(self):
+        return st.session_state.get('stream', None)
+    
+    @stream.setter
+    def stream(self, value):
+        st.session_state.stream = value
+    
+    @property
+    def bar_history(self):
+        return st.session_state.get('bar_history', [])
+    
+    @bar_history.setter
+    def bar_history(self, value):
+        st.session_state.bar_history = value
+        
+    @property
+    def last_signal(self):
+        return st.session_state.get('last_signal', None)
+        
+    @last_signal.setter
+    def last_signal(self, value):
+        st.session_state.last_signal = value
+        
+    @property
+    def position_state(self):
+        return st.session_state.get('position_state', None)
+        
+    @position_state.setter
+    def position_state(self, value):
+        st.session_state.position_state = value
+        
+    @property
+    def notification(self):
+        return st.session_state.get('notification', None)
+        
+    @notification.setter
+    def notification(self, value):
+        st.session_state.notification = value
+
         
 trading_state = TradingState()
+
+
+# ============================================================================
+# TRADINGVIEW INTEGRATION & ASSET DEFINITIONS
+# ============================================================================
+
+# Asset categories with TradingView symbols
+ASSET_CATEGORIES = {
+    "Stocks": {
+        "NVIDIA Corporation": "NASDAQ:NVDA",
+        "Apple Inc.": "NASDAQ:AAPL",
+        "Tesla Inc.": "NASDAQ:TSLA",
+        "Microsoft Corporation": "NASDAQ:MSFT",
+        "Amazon.com Inc.": "NASDAQ:AMZN",
+        "Alphabet Inc. (Google)": "NASDAQ:GOOGL",
+        "Meta Platforms Inc.": "NASDAQ:META",
+        "Netflix Inc.": "NASDAQ:NFLX"
+    },
+    "Indices": {
+        "NASDAQ-100": "NASDAQ:NDX",
+        "S&P 500": "SP:SPX",
+        "Dow Jones": "DJ:DJI",
+        "Russell 2000": "TVC:RUT"
+    },
+    "Forex": {
+        "Euro/U.S. Dollar": "FX:EURUSD",
+        "British Pound/U.S. Dollar": "FX:GBPUSD",
+        "U.S. Dollar/Japanese Yen": "FX:USDJPY",
+        "Australian Dollar/U.S. Dollar": "FX:AUDUSD",
+        "U.S. Dollar/Canadian Dollar": "FX:USDCAD",
+        "U.S. Dollar/Swiss Franc": "FX:USDCHF"
+    },
+    "Crypto": {
+        "Bitcoin/USD": "BINANCE:BTCUSDT",
+        "Ethereum/USD": "BINANCE:ETHUSDT",
+        "Solana/USD": "BINANCE:SOLUSDT",
+        "Cardano/USD": "BINANCE:ADAUSDT",
+        "Ripple/USD": "BINANCE:XRPUSDT"
+    },
+    "Commodities": {
+        "Gold": "TVC:GOLD",
+        "Silver": "TVC:SILVER",
+        "Crude Oil": "TVC:USOIL",
+        "Natural Gas": "TVC:NATURALGAS"
+    }
+}
+
+def get_tradingview_widget(symbol: str, height: int = 500) -> str:
+    """
+    Generate TradingView widget HTML for embedding.
+    
+    Args:
+        symbol: TradingView symbol (e.g., "NASDAQ:AAPL")
+        height: Height of the widget in pixels
+        
+    Returns:
+        HTML string for the TradingView widget
+    """
+    widget_html = f"""
+    <!-- TradingView Widget BEGIN -->
+    <div class="tradingview-widget-container" style="height:{height}px;width:100%">
+      <div id="tradingview_{symbol.replace(':', '_')}" style="height:100%;width:100%"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+      <script type="text/javascript">
+      new TradingView.widget(
+      {{
+        "width": "100%",
+        "height": {height},
+        "symbol": "{symbol}",
+        "interval": "D",
+        "timezone": "America/New_York",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "allow_symbol_change": true,
+        "container_id": "tradingview_{symbol.replace(':', '_')}"
+      }});
+      </script>
+    </div>
+    <!-- TradingView Widget END -->
+    """
+    return widget_html
+
+def get_tradingview_mini_widget(symbol: str, width: str = "100%", height: int = 400) -> str:
+    """
+    Generate TradingView advanced real-time chart widget.
+    
+    Args:
+        symbol: TradingView symbol
+        width: Width (e.g., "100%" or "500px")
+        height: Height in pixels
+        
+    Returns:
+        HTML string for the widget
+    """
+    widget_html = f"""
+    <!-- TradingView Widget BEGIN -->
+    <div class="tradingview-widget-container" style="height:{height}px;width:{width}">
+      <div id="tradingview_chart_{symbol.replace(':', '_')}" style="height:calc(100% - 32px);width:100%"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+      <script type="text/javascript">
+      new TradingView.widget(
+      {{
+        "autosize": true,
+        "symbol": "{symbol}",
+        "interval": "1",
+        "timezone": "America/New_York",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "hide_side_toolbar": false,
+        "allow_symbol_change": false,
+        "studies": [
+          "STD;SMA",
+          "STD;EMA",
+          "STD;RSI"
+        ],
+        "container_id": "tradingview_chart_{symbol.replace(':', '_')}"
+      }});
+      </script>
+    </div>
+    <!-- TradingView Widget END -->
+    """
+    return widget_html
 
 
 # ============================================================================
@@ -528,6 +805,35 @@ def run_realtime_trading(settings: dict):
     bar_history = {symbol: deque(maxlen=500) for symbol in symbols}
     positions = {}
     last_signal_time = {}
+
+    # Pre-fill with some historical data
+    try:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=5) # Fetch a few days to get enough bars
+        hist_data = data_handler.fetch_historical_data(
+            symbol=settings['trading_symbol'],
+            start_date=start_date.strftime('%Y-%m-%d'),
+            end_date=end_date.strftime('%Y-%m-%d'),
+            timeframe=timeframe
+        )
+        if hist_data is not None and not hist_data.empty:
+            # Convert to list of dicts
+            hist_data.reset_index(inplace=True)
+            trading_state.bar_history = hist_data.to_dict('records')
+            logger.logger.info(f"Pre-filled bar history with {len(trading_state.bar_history)} bars.")
+    except Exception as e:
+        logger.logger.error(f"Could not pre-fill bar history: {e}")
+
+    
+    # Close any existing WebSocket connection first
+    if trading_state.stream is not None:
+        try:
+            logger.logger.info("🔌 Closing existing WebSocket connection...")
+            trading_state.stream.stop()
+            time.sleep(2)  # Give time to properly close
+        except Exception as e:
+            logger.logger.warning(f"Warning closing old stream: {e}")
+        trading_state.stream = None
     
     # Initialize WebSocket
     stream = tradeapi.Stream(
@@ -537,6 +843,9 @@ def run_realtime_trading(settings: dict):
         data_feed='iex'
     )
     
+    # Store in global state
+    trading_state.stream = stream
+    
     async def handle_bar(bar):
         """Process incoming bar data."""
         if not trading_state.running:
@@ -544,54 +853,62 @@ def run_realtime_trading(settings: dict):
         
         symbol = bar.symbol
         
-        bar_history[symbol].append({
+        bar_data = {
             'timestamp': bar.timestamp,
             'open': bar.open,
             'high': bar.high,
             'low': bar.low,
             'close': bar.close,
             'volume': bar.volume
-        })
+        }
+        bar_history[symbol].append(bar_data)
         
+        # Update trading_state bar history
+        new_bar_history = trading_state.bar_history
+        new_bar_history.append(bar_data)
+        trading_state.bar_history = new_bar_history
+
+
         logger.logger.info(f"📊 {symbol}: ${bar.close:.2f}")
-        
+
         if len(bar_history[symbol]) < 50:
             return
-        
+
         # Check cooldown
         if symbol in last_signal_time:
             time_since = (datetime.now() - last_signal_time[symbol]).total_seconds()
             if time_since < 60:
                 return
-        
+
         try:
             df = pd.DataFrame(list(bar_history[symbol]))
             df.set_index('timestamp', inplace=True)
-            
+
             regime = regime_detector.predict_regime(df)
             trading_state.current_regime = regime
-            
+
             strategy, reason = strategy_selector.select_strategy(df)
             trading_state.current_strategy = strategy.__class__.__name__
-            
+
+            logger.logger.info(f"Strategy type: {type(strategy)}")
             signal = strategy.generate_signals(df)
-            
+            logger.logger.info(f"Signal type: {type(signal)}")
+
             if signal is not None and len(signal) > 0:
                 latest_signal = signal.iloc[-1]
-                
-                if latest_signal == 1:  # BUY
-                    logger.logger.info(f"📈 BUY signal for {symbol}")
-                    last_signal_time[symbol] = datetime.now()
-                elif latest_signal == -1:  # SELL
-                    logger.logger.info(f"📉 SELL signal for {symbol}")
-                    last_signal_time[symbol] = datetime.now()
-            
-            # Update state
-            trading_state.account = broker.get_account_info()
-            trading_state.positions = broker.get_open_positions()
-            
+                trading_state.last_signal = latest_signal
+
+                if trading_state.position_state is None: # Looking to buy
+                    if latest_signal == 1:
+                        trading_state.notification = "Recommendation: BUY"
+                        last_signal_time[symbol] = datetime.now()
+                elif trading_state.position_state == 'long': # Looking to sell
+                    if latest_signal == -1:
+                        trading_state.notification = "Recommendation: SELL"
+                        last_signal_time[symbol] = datetime.now()
         except Exception as e:
-            logger.logger.error(f"Error: {e}")
+            logger.logger.error(f"Error in handle_bar: {e}")
+
     
     # Subscribe
     for symbol in symbols:
@@ -601,9 +918,15 @@ def run_realtime_trading(settings: dict):
     
     try:
         stream.run()
-    except:
-        stream.stop()
-        logger.logger.info("✅ Stream stopped")
+    except Exception as e:
+        logger.logger.error(f"Stream error: {e}")
+    finally:
+        try:
+            stream.stop()
+            logger.logger.info("✅ Stream stopped")
+        except Exception as e:
+            logger.logger.warning(f"Error stopping stream: {e}")
+        trading_state.stream = None
 
 
 # ============================================================================
@@ -681,12 +1004,64 @@ def show_settings_page():
                 step=5.0,
                 help="Maximum percentage of capital in a single position"
             ) / 100
+        
+        st.markdown("---")
+        st.subheader("📈 Asset Selection")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Get current trading symbol
+            current_symbol = settings.get('trading_symbol', 'SPY')
             
-            trading_symbol = st.text_input(
-                "Trading Symbol",
-                value=settings['trading_symbol'],
-                help="Stock symbol to trade (e.g., SPY, QQQ)"
-            ).upper()
+            # Asset category selection
+            asset_category = st.selectbox(
+                "Asset Category",
+                options=list(ASSET_CATEGORIES.keys()),
+                index=0,
+                help="Choose the type of asset you want to trade"
+            )
+        
+        with col2:
+            # Get assets in selected category
+            assets_in_category = ASSET_CATEGORIES[asset_category]
+            asset_names = list(assets_in_category.keys())
+            
+            # Try to find current symbol in selected category
+            default_index = 0
+            for idx, name in enumerate(asset_names):
+                tradingview_symbol = assets_in_category[name]
+                # Extract base symbol (e.g., "NVDA" from "NASDAQ:NVDA")
+                base_symbol = tradingview_symbol.split(':')[-1].replace('USDT', '')
+                if base_symbol == current_symbol or tradingview_symbol == current_symbol:
+                    default_index = idx
+                    break
+            
+            selected_asset = st.selectbox(
+                "Select Asset",
+                options=asset_names,
+                index=default_index,
+                help="Choose the specific asset to trade"
+            )
+            
+            # Get the TradingView symbol and extract Alpaca-compatible symbol
+            tradingview_symbol = assets_in_category[selected_asset]
+            
+            # Convert TradingView symbol to Alpaca symbol
+            if ':' in tradingview_symbol:
+                trading_symbol = tradingview_symbol.split(':')[-1]
+            else:
+                trading_symbol = tradingview_symbol
+            
+            # For crypto, remove USDT suffix for display
+            if asset_category == "Crypto":
+                trading_symbol = trading_symbol.replace('USDT', '')
+            
+            # Store full TradingView symbol for charts
+            st.session_state.tradingview_symbol = tradingview_symbol
+            st.session_state.asset_category = asset_category
+            
+            st.info(f"📊 Trading: **{selected_asset}** ({trading_symbol})")
         
         st.markdown("---")
         st.subheader("⏰ Trading Intervals")
@@ -731,12 +1106,14 @@ def show_settings_page():
                 'max_position_size': max_position,
                 'trading_symbol': trading_symbol,
                 'check_interval': check_interval,
-                'realtime_timeframe': realtime_timeframe
+                'realtime_timeframe': realtime_timeframe,
+                'asset_category': st.session_state.get('asset_category', 'Stocks'),
+                'tradingview_symbol': st.session_state.get('tradingview_symbol', 'NASDAQ:SPY')
             }
             
             save_settings(new_settings)
             st.success("✅ Settings saved successfully!")
-            logger.logger.info("Settings saved via UI")
+            logger.logger.info(f"Settings saved via UI - Trading {selected_asset}")
             time.sleep(1)
             st.rerun()
         except Exception as e:
@@ -769,11 +1146,75 @@ def show_settings_page():
 
 
 def show_dashboard_page():
-    """Display main trading dashboard."""
+    """Display main trading dashboard with auto-start."""
     st.title("🥝 Kiwi AI Trading Dashboard")
-    st.markdown("---")
     
     settings = load_settings()
+    
+    # Get selected asset info
+    selected_symbol = settings.get('trading_symbol', 'SPY')
+    tradingview_symbol = settings.get('tradingview_symbol', 'NASDAQ:SPY')
+    asset_category = settings.get('asset_category', 'Stocks')
+    
+    # Auto-start real-time trading if not running and properly configured
+    if not trading_state.running and check_configuration():
+        st.info("🚀 Auto-starting Real-Time Trading System...")
+        try:
+            trading_state.running = True
+            trading_state.mode = 'realtime'
+            
+            def run_realtime():
+                try:
+                    run_realtime_trading(settings)
+                except Exception as e:
+                    log_error('Real-Time Mode', 'Critical error in real-time mode thread', e, {
+                        'settings': str(settings)
+                    })
+                    trading_state.running = False
+            
+            trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
+            trading_state.thread.start()
+            logger.logger.info("Real-time mode auto-started")
+            time.sleep(2)
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Failed to auto-start: {e}")
+            log_error('Auto-Start', 'Failed to auto-start real-time mode', e, {})
+    
+    # Auto-refresh every 5 seconds when trading is active
+    if trading_state.running:
+        st.markdown("� **LIVE** - Auto-refreshing every 5 seconds...")
+        time.sleep(5)
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Display TradingView Chart at the top
+    st.subheader(f"📊 {selected_symbol} - Real-Time Chart")
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        # Embed TradingView widget
+        st.markdown(get_tradingview_mini_widget(tradingview_symbol, width="100%", height=450), unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("### 📈 Asset Info")
+        st.markdown(f"**Category:** {asset_category}")
+        st.markdown(f"**Symbol:** {selected_symbol}")
+        st.markdown(f"**TradingView:** {tradingview_symbol}")
+        
+        if trading_state.running:
+            st.success("🟢 **LIVE TRADING**")
+        else:
+            st.warning("⚪ **STOPPED**")
+        
+        st.markdown("---")
+        st.markdown("### 🧠 AI Status")
+        st.markdown(f"**Regime:** {trading_state.current_regime}")
+        st.markdown(f"**Strategy:** {trading_state.current_strategy}")
+    
+    st.markdown("---")
     
     # Show error notification if there are recent errors
     recent_errors = [e for e in trading_state.error_log if e['severity'] == 'ERROR']
@@ -784,82 +1225,92 @@ def show_dashboard_page():
         st.error("⚠️ API keys not configured! Go to Settings tab to configure.")
         return
     
-    # Status indicators
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        status_color = "🟢" if trading_state.running else "⚪"
-        st.metric("System Status", f"{status_color} {'Running' if trading_state.running else 'Stopped'}")
-    
-    with col2:
-        mode_text = trading_state.mode.upper() if trading_state.mode else "IDLE"
-        st.metric("Trading Mode", mode_text)
-    
-    with col3:
-        paper_text = "PAPER" if settings['is_paper_trading'] else "LIVE"
-        st.metric("Account Type", paper_text)
-    
-    with col4:
-        st.metric("Last Update", datetime.now().strftime("%H:%M:%S"))
+    # AI Recommendations section
+    st.subheader("🧠 AI Recommendations")
+    if trading_state.notification:
+        st.warning(trading_state.notification)
+        col1, col2 = st.columns(2)
+        with col1:
+            if "BUY" in trading_state.notification:
+                if st.button("✅ Execute Buy", use_container_width=True, type="primary"):
+                    trading_state.position_state = 'long'
+                    trading_state.notification = None
+                    st.rerun()
+        with col2:
+            if "SELL" in trading_state.notification:
+                if st.button("❌ Execute Sell", use_container_width=True, type="secondary"):
+                    trading_state.position_state = None
+                    trading_state.notification = None
+                    st.rerun()
+    else:
+        st.info("🤖 AI is analyzing the market... Waiting for signals.")
     
     st.markdown("---")
-    
+        
     # Account metrics
     if trading_state.broker:
         try:
-            account = trading_state.broker.get_account_info()
-            positions = trading_state.broker.get_open_positions()
+            st.subheader("Account Status")
+            acc_cols = st.columns(4)
             
-            col1, col2, col3, col4 = st.columns(4)
+            portfolio_value = account.get('portfolio_value', 0)
+            acc_cols[0].metric(
+                "💰 Portfolio Value",
+                f"${portfolio_value:,.2f}",
+                delta=f"{((portfolio_value / settings['initial_capital']) - 1) * 100:.2f}%"
+            )
             
-            with col1:
-                portfolio_value = account.get('portfolio_value', 0)
-                st.metric(
-                    "💰 Portfolio Value",
-                    f"${portfolio_value:,.2f}",
-                    delta=f"{((portfolio_value / settings['initial_capital']) - 1) * 100:.2f}%"
-                )
+            acc_cols[1].metric("💵 Cash", f"${account.get('cash', 0):,.2f}")
+            acc_cols[2].metric("📍 Open Positions", len(positions))
             
-            with col2:
-                st.metric("💵 Cash", f"${account.get('cash', 0):,.2f}")
-            
-            with col3:
-                st.metric("📍 Open Positions", len(positions))
-            
-            with col4:
-                total_pl = sum(pos.get('unrealized_pl', 0) for pos in positions)
-                st.metric(
-                    "📈 Unrealized P&L",
-                    f"${total_pl:.2f}",
-                    delta=f"{(total_pl / portfolio_value * 100):.2f}%" if portfolio_value > 0 else "0%"
-                )
-            
+            total_pl = sum(pos.get('unrealized_pl', 0) for pos in positions)
+            acc_cols[3].metric(
+                "📈 Unrealized P&L",
+                f"${total_pl:.2f}",
+                delta=f"{(total_pl / portfolio_value * 100):.2f}%" if portfolio_value > 0 else "0%"
+            )
             st.markdown("---")
             
-            # Two columns: Market Intelligence + Positions
+            # Market Intelligence & Risk
+            st.subheader("Market Analysis & Risk")
+            intel_cols = st.columns(2)
+            
+            with intel_cols[0]:
+                st.markdown("**🧠 Market Intelligence**")
+                regime_color = {
+                    'TREND': '🟢',
+                    'SIDEWAYS': '🟡',
+                    'VOLATILE': '🔴',
+                    'Unknown': '⚪'
+                }
+                st.markdown(f"- **Regime:** {regime_color.get(trading_state.current_regime, '⚪')} {trading_state.current_regime}")
+                st.markdown(f"- **Strategy:** 🎯 {trading_state.current_strategy}")
+
+            with intel_cols[1]:
+                st.markdown("**🛡️ Risk Management**")
+                risk_manager = RiskManager(
+                    initial_capital=settings['initial_capital'],
+                    max_risk_per_trade=settings['max_risk_per_trade']
+                )
+                risk_summary = risk_manager.get_risk_summary(
+                    account,
+                    {pos['symbol']: pos for pos in positions}
+                )
+                status_color_map = {
+                    'HEALTHY': '🟢',
+                    'WARNING': '🟡',
+                    'CRITICAL': '🔴'
+                }
+                st.markdown(f"- **Status:** {status_color_map.get(risk_summary['risk_status'], '⚪')} {risk_summary['risk_status']}")
+                st.markdown(f"- **Drawdown:** {risk_summary['drawdown_pct']:.2f}%")
+
+            st.markdown("---")
+            
+            # Two columns: Positions & Trading Activity
             left_col, right_col = st.columns([3, 2])
             
             with left_col:
-                st.subheader("🧠 Market Intelligence")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    regime_color = {
-                        'TREND': '🟢',
-                        'SIDEWAYS': '🟡',
-                        'VOLATILE': '🔴',
-                        'Unknown': '⚪'
-                    }
-                    st.markdown(f"### {regime_color.get(trading_state.current_regime, '⚪')} Regime: **{trading_state.current_regime}**")
-                
-                with col2:
-                    st.markdown(f"### 🎯 Strategy: **{trading_state.current_strategy}**")
-                
-                st.markdown("---")
-                
                 st.subheader("📍 Open Positions")
-                
                 if len(positions) > 0:
                     positions_data = []
                     for pos in positions:
@@ -872,7 +1323,6 @@ def show_dashboard_page():
                             'P&L': f"${pos['unrealized_pl']:.2f}",
                             'P&L %': f"{pos.get('unrealized_plpc', 0)*100:.2f}%"
                         })
-                    
                     df = pd.DataFrame(positions_data)
                     st.dataframe(df, use_container_width=True, hide_index=True)
                 else:
@@ -880,7 +1330,6 @@ def show_dashboard_page():
             
             with right_col:
                 st.subheader("📊 Trading Activity")
-                
                 if trading_state.recent_trades:
                     st.markdown("**Recent Trades:**")
                     for trade in trading_state.recent_trades[:5]:
@@ -888,31 +1337,6 @@ def show_dashboard_page():
                         st.text(f"{action_icon} {trade['time'].strftime('%H:%M')} - {trade['action']} {trade['symbol']} @ ${trade['price']:.2f}")
                 else:
                     st.info("No recent trades")
-                
-                st.markdown("---")
-                st.subheader("🛡️ Risk Management")
-                
-                if trading_state.broker:
-                    risk_manager = RiskManager(
-                        initial_capital=settings['initial_capital'],
-                        max_risk_per_trade=settings['max_risk_per_trade']
-                    )
-                    
-                    risk_summary = risk_manager.get_risk_summary(
-                        account,
-                        {pos['symbol']: pos for pos in positions}
-                    )
-                    
-                    st.metric("Drawdown", f"{risk_summary['drawdown_pct']:.2f}%")
-                    st.metric("Portfolio Concentration", f"{risk_summary['portfolio_concentration']:.1f}%")
-                    st.metric("Cash Position", f"{risk_summary['cash_pct']:.1f}%")
-                    
-                    status_color_map = {
-                        'HEALTHY': '🟢',
-                        'WARNING': '🟡',
-                        'CRITICAL': '🔴'
-                    }
-                    st.markdown(f"**Status:** {status_color_map.get(risk_summary['risk_status'], '⚪')} {risk_summary['risk_status']}")
         
         except Exception as e:
             st.error(f"Error fetching account data: {e}")
@@ -931,88 +1355,26 @@ def show_control_page():
         st.error("⚠️ Please configure API keys in Settings first!")
         return
     
-    st.subheader("🚀 Start Trading")
+    # Get selected asset info
+    selected_symbol = settings.get('trading_symbol', 'SPY')
+    tradingview_symbol = settings.get('tradingview_symbol', 'NASDAQ:SPY')
+    asset_category = settings.get('asset_category', 'Stocks')
     
-    col1, col2 = st.columns(2)
+    st.info(f"📊 **Current Asset:** {selected_symbol} ({asset_category})")
     
-    with col1:
-        st.markdown("### 📊 Daily Mode")
-        st.markdown("""
-        - Checks market at regular intervals
-        - Uses daily bars for analysis
-        - Good for swing trading
-        - Lower resource usage
-        """)
-        
-        if not trading_state.running:
-            if st.button("▶️ Start Daily Mode", use_container_width=True, type="primary"):
-                try:
-                    trading_state.running = True
-                    trading_state.mode = 'daily'
-                    
-                    def run_daily():
-                        try:
-                            kiwi = KiwiAI(settings)
-                            kiwi.run_trading_loop()
-                        except Exception as e:
-                            log_error('Daily Mode', 'Critical error in daily mode thread', e, {
-                                'settings': str(settings)
-                            })
-                            trading_state.running = False
-                    
-                    trading_state.thread = threading.Thread(target=run_daily, daemon=True)
-                    trading_state.thread.start()
-                    
-                    st.success("✅ Daily mode started!")
-                    logger.logger.info("Daily mode started via UI")
-                    time.sleep(1)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Failed to start daily mode: {e}")
-                    log_error('Daily Mode', 'Failed to start daily mode', e, {
-                        'settings': str(settings)
-                    })
-                    trading_state.running = False
+    st.subheader("⚡ Real-Time Trading System")
+    st.markdown("""
+    **System Features:**
+    - 🔴 **Live Market Data** from TradingView
+    - 🧠 **AI-Powered Analysis** with regime detection
+    - 📊 **Real-Time Signals** for optimal entry/exit
+    - 🛡️ **Advanced Risk Management**
+    - 📈 **Multi-Asset Support** (Stocks, Forex, Crypto, Indices)
+    """)
     
-    with col2:
-        st.markdown("### ⚡ Real-Time Mode")
-        st.markdown("""
-        - Live WebSocket data streaming
-        - Analyzes minute-level bars
-        - Instant signal generation
-        - Perfect for day trading
-        """)
-        
-        if not REALTIME_AVAILABLE:
-            st.warning("Install alpaca-trade-api first:\n```pip install alpaca-trade-api```")
-        elif not trading_state.running:
-            if st.button("▶️ Start Real-Time Mode", use_container_width=True, type="primary"):
-                try:
-                    trading_state.running = True
-                    trading_state.mode = 'realtime'
-                    
-                    def run_realtime():
-                        try:
-                            run_realtime_trading(settings)
-                        except Exception as e:
-                            log_error('Real-Time Mode', 'Critical error in real-time mode thread', e, {
-                                'settings': str(settings)
-                            })
-                            trading_state.running = False
-                    
-                    trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
-                    trading_state.thread.start()
-                    
-                    st.success("✅ Real-time mode started!")
-                    logger.logger.info("Real-time mode started via UI")
-                    time.sleep(1)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Failed to start real-time mode: {e}")
-                    log_error('Real-Time Mode', 'Failed to start real-time mode', e, {
-                        'settings': str(settings)
-                    })
-                    trading_state.running = False
+    if not REALTIME_AVAILABLE:
+        st.error("❌ Install alpaca-trade-api first:\n```pip install alpaca-trade-api```")
+        return
     
     st.markdown("---")
     
@@ -1026,6 +1388,18 @@ def show_control_page():
             if st.button("🛑 Stop Trading", use_container_width=True, type="secondary"):
                 try:
                     trading_state.running = False
+                    
+                    # Close WebSocket connection if exists
+                    if trading_state.stream is not None:
+                        try:
+                            logger.logger.info("🔌 Closing WebSocket connection...")
+                            trading_state.stream.stop()
+                            time.sleep(1)  # Give time to properly close
+                            trading_state.stream = None
+                            logger.logger.info("✅ WebSocket closed")
+                        except Exception as e:
+                            logger.logger.warning(f"Warning closing WebSocket: {e}")
+                            trading_state.stream = None
                     
                     if trading_state.broker:
                         try:
@@ -1069,35 +1443,40 @@ def show_help_page():
     st.markdown("---")
     
     st.markdown("""
-    # 🥝 Kiwi AI Trading System
+    # 🥝 Kiwi AI Trading System v2.0
     
-    Welcome to the Kiwi AI automated trading system! This guide will help you get started.
+    Welcome to the upgraded Kiwi AI real-time trading system with TradingView integration!
     
     ## 🚀 Quick Start
     
     1. **Configure Settings**: Go to the "Settings" tab and enter your Alpaca API keys
-    2. **Test Connection**: Use the "Test Connection" button to verify your setup
-    3. **Start Trading**: Go to "Control" tab and choose Daily or Real-Time mode
-    4. **Monitor**: Watch the "Dashboard" tab for live updates
+    2. **Select Asset**: Choose from Stocks, Forex, Crypto, Indices, or Commodities
+    3. **Test Connection**: Use the "Test Connection" button to verify your setup
+    4. **Auto-Start**: System automatically starts when you open the Dashboard
+    5. **Monitor**: Watch real-time TradingView charts and AI signals
     
     ---
     
-    ## 💡 Trading Modes
+    ## 🆕 What's New in v2.0
     
-    ### 📊 Daily Mode
-    - Checks market at regular intervals (default: 60 minutes)
-    - Uses daily bars for technical analysis
-    - Perfect for swing trading strategies
-    - Lower resource usage and data costs
-    - Recommended for beginners
+    ### 📊 TradingView Integration
+    - **Real-time professional charts** embedded in the dashboard
+    - **Multi-asset support**: Trade stocks, forex, crypto, indices, and commodities
+    - **Advanced technical indicators** built into the charts
+    - **Live market data** from TradingView
     
-    ### ⚡ Real-Time Mode
-    - Live WebSocket data streaming
-    - Analyzes 1-minute to 1-hour bars
-    - Instant signal generation and execution
-    - Perfect for day trading strategies
-    - Requires `alpaca-trade-api` package
-    - Higher resource usage
+    ### ⚡ Auto-Start System
+    - **Instant activation**: No need to manually start trading
+    - **Real-time only**: Always connected to live market data
+    - **Continuous monitoring**: AI analyzes markets 24/7
+    - **Smart alerts**: Get notified of trading opportunities instantly
+    
+    ### 🌍 Multi-Asset Trading
+    - **Stocks**: NVDA, AAPL, TSLA, MSFT, AMZN, and more
+    - **Forex**: EUR/USD, GBP/USD, USD/JPY, etc.
+    - **Crypto**: BTC, ETH, SOL, ADA, XRP
+    - **Indices**: NASDAQ, S&P 500, Dow Jones
+    - **Commodities**: Gold, Silver, Oil, Natural Gas
     
     ---
     
@@ -1145,7 +1524,34 @@ def show_help_page():
     
     ---
     
-    ## 🔗 Resources
+    ## � Troubleshooting
+    
+    ### "Connection limit exceeded" Error
+    
+    **Problem:** You see `ValueError: connection limit exceeded` or `HTTP 429` errors.
+    
+    **Causes:**
+    - Multiple instances of the app running
+    - Old WebSocket connections not properly closed
+    - Alpaca free tier allows only 1 concurrent connection
+    
+    **Solutions:**
+    1. **Stop the current session:** Click "🛑 Stop Trading" button
+    2. **Close all app instances:** Check Task Manager and close all `python.exe` or `streamlit` processes
+    3. **Restart the application:** Run `python run_kiwi.py` again
+    4. **Wait 30 seconds** before starting a new session
+    5. **Use Daily Mode** instead of Real-Time Mode (no WebSocket needed)
+    
+    ### Other Common Issues
+    
+    - **Invalid API keys:** Check Settings tab and verify your Alpaca credentials
+    - **Market closed:** Trading only works during market hours (9:30 AM - 4:00 PM ET)
+    - **Insufficient funds:** Check your account balance in the Dashboard
+    - **Network errors:** Verify your internet connection
+    
+    ---
+    
+    ## �🔗 Resources
     
     - **Alpaca API**: [alpaca.markets](https://alpaca.markets/)
     - **Documentation**: See README.md in project folder
@@ -1665,18 +2071,47 @@ def main():
         """, unsafe_allow_html=True)
         st.markdown("---")
         
-        page = st.radio(
-            "Navigation",
-            ["Dashboard", "Control", "Settings", "Error Log", "Help"],
-            label_visibility="collapsed",
-            format_func=lambda x: {
-                "Dashboard": "📊  Dashboard",
-                "Control": "▶  Control",
-                "Settings": "⚙  Settings",
-                "Error Log": "⚠  Error Log",
-                "Help": "ℹ  Help"
-            }[x]
-        )
+        # Initialize page in session state if not exists
+        if 'current_page' not in st.session_state:
+            st.session_state.current_page = "Dashboard"
+        
+        # Navigation with collapsible groups
+        # Dashboard & Control grouped together
+        with st.expander("📊 Dashboard & Control", expanded=st.session_state.current_page in ["Dashboard", "Control"]):
+            # Determine current index
+            current_index = 0 if st.session_state.current_page == "Dashboard" else (1 if st.session_state.current_page == "Control" else 0)
+            nav_choice = st.radio(
+                "Main Navigation",
+                ["Dashboard", "Control"],
+                label_visibility="collapsed",
+                key="main_nav",
+                index=current_index,
+                format_func=lambda x: {
+                    "Dashboard": "📊  Dashboard",
+                    "Control": "▶  Control"
+                }[x]
+            )
+            # Update page if radio changed
+            if nav_choice != st.session_state.current_page:
+                st.session_state.current_page = nav_choice
+        
+        # Settings (separate)
+        with st.expander("⚙  Settings", expanded=st.session_state.current_page == "Settings"):
+            if st.button("⚙  Settings", use_container_width=True, key="settings_btn"):
+                st.session_state.current_page = "Settings"
+        
+        # Error Log (separate)
+        with st.expander("⚠  Error Log", expanded=st.session_state.current_page == "Error Log"):
+            if st.button("⚠  Error Log", use_container_width=True, key="error_log_btn"):
+                st.session_state.current_page = "Error Log"
+        
+        # Help (separate)
+        with st.expander("ℹ  Help", expanded=st.session_state.current_page == "Help"):
+            if st.button("ℹ  Help", use_container_width=True, key="help_btn"):
+                st.session_state.current_page = "Help"
+        
+        # Update page variable for routing
+        page = st.session_state.current_page
         
         st.markdown("---")
         
@@ -1686,22 +2121,36 @@ def main():
         
         # Status indicator with animation
         status_class = "status-running" if trading_state.running else "status-stopped"
-        status_text = "RUNNING" if trading_state.running else "IDLE"
-        status_icon = "●" if trading_state.running else "○"
+        status_text = "LIVE" if trading_state.running else "STOPPED"
+        status_icon = "🔴" if trading_state.running else "⚪"
+        
+        # Always show REAL-TIME mode
+        mode_display = "REAL-TIME"
+        
+        # Get current trading symbol
+        current_symbol = settings.get('trading_symbol', 'SPY')
         
         st.markdown(f"""
             <div style='padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; margin: 10px 0;'>
                 <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
                     <span style='color: #b0b0b0; font-size: 12px;'>VERSION</span>
-                    <span style='color: #ffffff; font-weight: 600;'>1.0.0</span>
+                    <span style='color: #ffffff; font-weight: 600;'>2.0.0</span>
                 </div>
                 <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
                     <span style='color: #b0b0b0; font-size: 12px;'>MODE</span>
+                    <span style='color: #00d9ff; font-weight: 600;'>{mode_display}</span>
+                </div>
+                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+                    <span style='color: #b0b0b0; font-size: 12px;'>ASSET</span>
+                    <span style='color: #ffffff; font-weight: 600;'>{current_symbol}</span>
+                </div>
+                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
+                    <span style='color: #b0b0b0; font-size: 12px;'>ACCOUNT</span>
                     <span style='color: #00d9ff; font-weight: 600;'>{'PAPER' if settings['is_paper_trading'] else 'LIVE'}</span>
                 </div>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
                     <span style='color: #b0b0b0; font-size: 12px;'>STATUS</span>
-                    <span class='{status_class}' style='font-weight: 600; font-size: 14px;'>{status_icon} {status_text}</span>
+                    <span style='font-weight: 600; font-size: 14px;'>{status_icon} {status_text}</span>
                 </div>
             </div>
         """, unsafe_allow_html=True)

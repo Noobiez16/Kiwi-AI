@@ -9,8 +9,10 @@ Kiwi AI is designed to overcome the limitations of static trading models by:
 - **Dynamically selecting strategies** from a diverse arsenal
 - **Monitoring performance** in real-time
 - **Adapting to changing conditions** automatically
-- **Real-time data streaming** via WebSocket ⭐ NEW!
-- **Live visual dashboard** with interactive charts ⭐ NEW!
+- **Real-time data streaming** via WebSocket
+- **TradingView professional charts** with live market data 🆕
+- **Multi-asset support** (Stocks, Forex, Crypto, Indices, Commodities) 🆕
+- **Auto-start system** for instant trading 🆕
 
 ## 🚀 Quick Start
 
@@ -19,7 +21,10 @@ Kiwi AI is designed to overcome the limitations of static trading models by:
 Everything is now consolidated into **`run_kiwi.py`** - a visual, user-friendly application!
 
 ```bash
-# Just run this ONE command:
+# Windows: Use the startup script (Recommended)
+start_kiwi.bat
+
+# Or manually:
 python run_kiwi.py
 
 # Or with streamlit directly:
@@ -28,52 +33,80 @@ streamlit run run_kiwi.py
 
 **That's it!** The web dashboard opens at http://localhost:8501
 
+### 🛑 Stopping the Application
+
+```bash
+# Windows: Use the stop script (Recommended)
+stop_kiwi.bat
+
+# Or manually:
+# Press Ctrl+C in the terminal, then close all browser tabs
+```
+
+**⚠️ Important:** Always use the stop script or stop button to properly close WebSocket connections!
+
 ### ✨ No Coding Required!
 
 The app includes a **visual settings manager** - configure everything through the web interface:
 
-1. **Settings Tab** - Configure API keys, trading parameters, risk settings
-2. **Control Tab** - Start/stop trading with one click (Daily or Real-Time mode)
-3. **Dashboard Tab** - Monitor live performance, positions, P&L
-4. **Help Tab** - Complete documentation built-in
+1. **Settings Tab** - Configure API keys, select assets from 5 categories, adjust parameters
+2. **Dashboard Tab** - Auto-starts trading, shows TradingView charts, monitor live performance
+3. **Control Tab** - View system status and asset information
+4. **Error Log Tab** - Track and troubleshoot any issues
+5. **Help Tab** - Complete documentation built-in
 
 **Perfect for non-coders!** All configuration is visual - no terminal commands or .env file editing needed.
 
-### 📊 Features
+### 📊 Features (v2.0)
 
-- **Daily Mode** - Periodic checks (swing trading)
-- **Real-Time Mode** - Live WebSocket streaming (day trading)
+- **Auto-Start System** - Trading begins automatically when opening dashboard 🆕
+- **TradingView Charts** - Professional real-time charts with technical indicators 🆕
+- **Multi-Asset Trading** - 27 assets across Stocks, Forex, Crypto, Indices, Commodities 🆕
+- **Real-Time Mode** - Live WebSocket streaming (auto-enabled)
 - **Visual Settings** - Configure everything in the browser
-- **Live Dashboard** - Real-time monitoring and metrics
+- **Live Dashboard** - Real-time monitoring and metrics with professional charts
 - **Risk Management** - Built-in safety features
-- **Paper Trading** - Test with fake money first
+- **Paper Trading** - Test with fake money first (default enabled)
 
-📖 **[Quick Start Guide](QUICKSTART.md)** - Concise usage reference
+## 🏁 Current Status: v2.0 Complete ✅
 
-## � Current Status: Phase 4+ Complete ✅
-
-**Latest Update:** October 20, 2025 - Real-Time Trading & Live Visualization Integrated!
+**Latest Update:** November 2, 2025 - TradingView Integration & Multi-Asset Support!
 
 📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)** | 🚀 **[Deployment Guide](DEPLOYMENT.md)**
 
-### ✨ New Real-Time Features (Integrated into main.py)
+### ✨ v2.0 Features - TradingView & Multi-Asset 🆕
 
-#### 📡 Real-Time Trading Mode ⭐
-- **WebSocket Streaming** - Live market data via Alpaca WebSocket API
-- **Multi-Symbol Support** - Trade multiple assets simultaneously
-- **Flexible Timeframes** - 1Min, 5Min, 15Min, 1Hour bars
-- **Instant Signals** - Sub-second signal generation from live data
-- **Auto-Execution** - Automated trade execution on signals
-- **Position Tracking** - Real-time position management
-- **Performance Monitoring** - Live performance metrics
+#### � TradingView Integration
+- **Professional Charts** - Embedded real-time TradingView widgets
+- **Live Market Data** - Real-time price updates and candlestick patterns
+- **Technical Indicators** - Built-in SMA, EMA, RSI analysis
+- **Interactive Interface** - Zoom, pan, and symbol search
+- **Dark Theme** - Matching application design
+- **Multiple Timeframes** - 1Min to Daily bars
 
-#### 📊 Enhanced Dashboard ⭐
+#### 🌍 Multi-Asset Support (27 Assets)
+- **Stocks** - NVDA, AAPL, TSLA, MSFT, AMZN, GOOGL, META, NFLX
+- **Indices** - NASDAQ-100, S&P 500, Dow Jones, Russell 2000
+- **Forex** - EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD, USD/CHF
+- **Crypto** - BTC, ETH, SOL, ADA, XRP (all vs USDT)
+- **Commodities** - Gold, Silver, Crude Oil, Natural Gas
+
+#### ⚡ Auto-Start System
+- **Instant Activation** - No manual start button needed
+- **Configuration Check** - Validates setup before starting
+- **Real-Time Only** - Streamlined single mode operation
+- **Background Thread** - Non-blocking startup
+- **Continuous Monitoring** - 24/7 market analysis
+
+#### � Enhanced Dashboard
+- **TradingView Charts** - Professional real-time visualization at top
+- **Asset Information** - Category, symbol, and status display
+- **AI Recommendations** - One-click trade execution
 - **Account Overview** - Real-time portfolio value and P&L
-- **Position Tracking** - Open positions with entry prices
+- **Position Tracking** - Open positions with live P&L
 - **Performance Metrics** - Sharpe ratio, drawdown, win rate
-- **Market Intelligence** - Live regime detection and confidence scores
-- **Strategy Display** - Active strategy and signal generation
-- **Auto-Refresh** - Configurable refresh intervals (1-30 seconds)
+- **Market Intelligence** - Live regime detection and strategy display
+- **Auto-Refresh** - Updates every 5 seconds when active
 
 ### ✅ Completed Components
 
@@ -460,16 +493,25 @@ INITIAL_CAPITAL="100000"
 
 ## 📊 Project Status
 
-**Current Version:** 0.3.0  
+**Current Version:** 2.0.0 🆕  
+**Latest Update:** November 2, 2025 - TradingView Integration & Multi-Asset Support  
 **Phase 1 Completion:** October 17, 2025  
 **Phase 2 Completion:** October 18, 2025  
 **Phase 3 Completion:** October 18, 2025  
-**Total Lines of Code:** 5,750+  
-**Test Coverage:** 100% for Phases 1, 2 & 3  
+**Phase 4 Completion:** October 19, 2025  
+**Phase 5 Completion:** October 20, 2025 (Consolidation & UI Upgrade)  
+**v2.0 Release:** November 2, 2025 (TradingView & Multi-Asset)  
+**Total Lines of Code:** 9,000+  
+**Test Coverage:** 100% for all phases  
 **Strategies Implemented:** 3  
 **AI Components:** 3 (Regime Detector, Performance Monitor, Strategy Selector)  
 **Execution Modules:** 2 (Broker Interface, Risk Manager)  
-**Status:** ✅ Ready for Paper Trading
+**Main Application:** `run_kiwi.py` (All-in-one web dashboard)  
+**Trading Modes:** Real-Time Only (Auto-Start WebSocket streaming)  
+**Charts:** Professional TradingView integration with live data  
+**Supported Assets:** 27 instruments across 5 categories (Stocks, Forex, Crypto, Indices, Commodities)  
+**UI:** Professional liquid-style dashboard with glass morphism  
+**Status:** ✅ Production Ready - Multi-Asset Trading with Real-Time Charts
 
 ## 🤝 Contributing
 
@@ -506,8 +548,6 @@ SOFTWARE.
 ## 📧 Contact
 
 **GitHub:** [@Noobiez16](https://github.com/Noobiez16)
-
-Feel free to open issues, submit PRs, or reach out with questions and suggestions!
 
 ---
 

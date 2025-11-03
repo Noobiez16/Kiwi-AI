@@ -31,7 +31,7 @@ def train_regime_model(
         save_model: Whether to save the trained model
     """
     print("=" * 80)
-    print(" " * 20 + "🧠 KIWI_AI MODEL TRAINING 🧠")
+    print(" " * 20 + "🧠 KIWI AI MODEL TRAINING 🧠")
     print("=" * 80)
     print()
     
