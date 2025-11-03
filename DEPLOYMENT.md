@@ -1,4 +1,4 @@
-# Kiwi_AI Deployment Guide
+# Kiwi AI Deployment Guide
 
 ## 📋 Table of Contents
 - [Prerequisites](#prerequisites)

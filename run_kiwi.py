@@ -44,6 +44,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Try to import streamlit first
 try:
     import streamlit as st
+    import streamlit.components.v1 as components
     STREAMLIT_AVAILABLE = True
 except ImportError:
     STREAMLIT_AVAILABLE = False
@@ -1146,84 +1147,263 @@ def show_settings_page():
 
 
 def show_dashboard_page():
-    """Display main trading dashboard with auto-start."""
+    """Display unified trading dashboard with controls and asset selector."""
     st.title("🥝 Kiwi AI Trading Dashboard")
     
     settings = load_settings()
     
-    # Get selected asset info
+    if not check_configuration():
+        st.error("⚠️ API keys not configured! Go to Settings tab to configure.")
+        return
+    
+    # ============================================================================
+    # PROFESSIONAL ASSET SELECTOR - Top Bar
+    # ============================================================================
+    st.markdown("---")
+    
+    col_selector, col_controls = st.columns([3, 1])
+    
+    with col_selector:
+        st.markdown("### 📊 Select Trading Asset")
+        
+        # Category and Asset selection in one row
+        sel_col1, sel_col2 = st.columns([1, 2])
+        
+        with sel_col1:
+            current_category = settings.get('asset_category', 'Stocks')
+            asset_category = st.selectbox(
+                "Category",
+                options=list(ASSET_CATEGORIES.keys()),
+                index=list(ASSET_CATEGORIES.keys()).index(current_category),
+                key="asset_category_selector"
+            )
+        
+        with sel_col2:
+            assets_in_category = ASSET_CATEGORIES[asset_category]
+            asset_names = list(assets_in_category.keys())
+            
+            # Find current selection or default to first
+            current_symbol = settings.get('trading_symbol', '')
+            current_tv_symbol = settings.get('tradingview_symbol', '')
+            
+            default_index = 0
+            for idx, (name, tv_sym) in enumerate(assets_in_category.items()):
+                if tv_sym == current_tv_symbol:
+                    default_index = idx
+                    break
+            
+            selected_asset_name = st.selectbox(
+                "Asset",
+                options=asset_names,
+                index=default_index,
+                key="asset_selector"
+            )
+            
+            selected_tradingview_symbol = assets_in_category[selected_asset_name]
+            
+            # Extract Alpaca symbol from TradingView symbol
+            if asset_category == "Stocks":
+                selected_symbol = selected_tradingview_symbol.split(':')[1]
+            elif asset_category == "Crypto":
+                # Convert BTCUSDT to BTC/USD format for Alpaca
+                crypto_symbol = selected_tradingview_symbol.split(':')[1].replace('USDT', '/USD')
+                selected_symbol = crypto_symbol
+            else:
+                selected_symbol = selected_asset_name
+            
+            # Update settings if changed
+            if (settings.get('trading_symbol') != selected_symbol or 
+                settings.get('tradingview_symbol') != selected_tradingview_symbol or
+                settings.get('asset_category') != asset_category):
+                
+                settings['trading_symbol'] = selected_symbol
+                settings['tradingview_symbol'] = selected_tradingview_symbol
+                settings['asset_category'] = asset_category
+                save_settings(settings)
+                st.success(f"✅ Switched to {selected_asset_name}")
+                time.sleep(1)
+                st.rerun()
+    
+    with col_controls:
+        st.markdown("### ⚡ Trading Controls")
+        
+        # Start/Stop trading button
+        if trading_state.running:
+            if st.button("🛑 Stop Trading", use_container_width=True, type="secondary"):
+                try:
+                    trading_state.running = False
+                    
+                    # Close WebSocket connection if exists
+                    if trading_state.stream is not None:
+                        try:
+                            logger.logger.info("🔌 Closing WebSocket connection...")
+                            trading_state.stream.stop()
+                            time.sleep(1)
+                            trading_state.stream = None
+                        except Exception as e:
+                            logger.logger.warning(f"Warning closing WebSocket: {e}")
+                            trading_state.stream = None
+                    
+                    st.success("✅ Trading stopped!")
+                    logger.logger.info("Trading stopped via UI")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+        else:
+            if st.button("🚀 Start Trading", use_container_width=True, type="primary"):
+                st.info("🚀 Starting Real-Time Trading System...")
+                try:
+                    trading_state.running = True
+                    trading_state.mode = 'realtime'
+                    
+                    def run_realtime():
+                        try:
+                            run_realtime_trading(settings)
+                        except Exception as e:
+                            log_error('Real-Time Mode', 'Critical error', e, {'settings': str(settings)})
+                            trading_state.running = False
+                    
+                    trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
+                    trading_state.thread.start()
+                    logger.logger.info("Real-time mode started")
+                    time.sleep(2)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to start: {e}")
+    
+    # Get current asset info
     selected_symbol = settings.get('trading_symbol', 'SPY')
     tradingview_symbol = settings.get('tradingview_symbol', 'NASDAQ:SPY')
     asset_category = settings.get('asset_category', 'Stocks')
     
-    # Auto-start real-time trading if not running and properly configured
-    if not trading_state.running and check_configuration():
-        st.info("🚀 Auto-starting Real-Time Trading System...")
-        try:
-            trading_state.running = True
-            trading_state.mode = 'realtime'
-            
-            def run_realtime():
-                try:
-                    run_realtime_trading(settings)
-                except Exception as e:
-                    log_error('Real-Time Mode', 'Critical error in real-time mode thread', e, {
-                        'settings': str(settings)
-                    })
-                    trading_state.running = False
-            
-            trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
-            trading_state.thread.start()
-            logger.logger.info("Real-time mode auto-started")
-            time.sleep(2)
-            st.rerun()
-        except Exception as e:
-            st.error(f"❌ Failed to auto-start: {e}")
-            log_error('Auto-Start', 'Failed to auto-start real-time mode', e, {})
+    st.markdown("---")
     
-    # Auto-refresh every 5 seconds when trading is active
-    if trading_state.running:
-        st.markdown("� **LIVE** - Auto-refreshing every 5 seconds...")
-        time.sleep(5)
-        st.rerun()
+    # ============================================================================
+    # LIVE STATUS BAR
+    # ============================================================================
+    status_cols = st.columns([1, 1, 1, 1])
+    
+    with status_cols[0]:
+        if trading_state.running:
+            st.success("🔴 **LIVE TRADING**")
+        else:
+            st.info("⚪ **STOPPED**")
+    
+    with status_cols[1]:
+        st.info(f"**Asset:** {selected_symbol}")
+    
+    with status_cols[2]:
+        st.info(f"**Category:** {asset_category}")
+    
+    with status_cols[3]:
+        mode_text = "PAPER" if settings.get('is_paper_trading', True) else "🔴 LIVE"
+        st.warning(f"**Mode:** {mode_text}")
     
     st.markdown("---")
     
-    # Display TradingView Chart at the top
-    st.subheader(f"📊 {selected_symbol} - Real-Time Chart")
+    # ============================================================================
+    # TRADINGVIEW CHART - Full Width Professional Display
+    # ============================================================================
+    st.subheader(f"📊 {selected_asset_name} - Real-Time Chart")
     
-    col1, col2 = st.columns([3, 1])
+    chart_col, info_col = st.columns([4, 1])
     
-    with col1:
-        # Embed TradingView widget
-        st.markdown(get_tradingview_mini_widget(tradingview_symbol, width="100%", height=450), unsafe_allow_html=True)
+    with chart_col:
+        # Embed TradingView Advanced Chart with professional settings
+        tradingview_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; background: #0f0c29; }}
+                .tradingview-widget-container {{ 
+                    height: 600px; 
+                    width: 100%; 
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 8px 32px rgba(0, 217, 255, 0.15);
+                    border: 1px solid rgba(0, 217, 255, 0.2);
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="tradingview-widget-container">
+              <div id="tradingview_chart"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+              <script type="text/javascript">
+                new TradingView.widget({{
+                  "autosize": true,
+                  "symbol": "{tradingview_symbol}",
+                  "interval": "5",
+                  "timezone": "America/New_York",
+                  "theme": "dark",
+                  "style": "1",
+                  "locale": "en",
+                  "toolbar_bg": "#0f0c29",
+                  "enable_publishing": false,
+                  "hide_top_toolbar": false,
+                  "hide_legend": false,
+                  "save_image": true,
+                  "container_id": "tradingview_chart",
+                  "backgroundColor": "rgba(15, 12, 41, 1)",
+                  "gridColor": "rgba(0, 217, 255, 0.06)",
+                  "hide_volume": false,
+                  "support_host": "https://www.tradingview.com",
+                  "studies": [
+                    "RSI@tv-basicstudies",
+                    "MASimple@tv-basicstudies"
+                  ],
+                  "show_popup_button": true,
+                  "popup_width": "1000",
+                  "popup_height": "650"
+                }});
+              </script>
+            </div>
+        </body>
+        </html>
+        """
+        components.html(tradingview_html, height=600)
     
-    with col2:
-        st.markdown("### 📈 Asset Info")
-        st.markdown(f"**Category:** {asset_category}")
-        st.markdown(f"**Symbol:** {selected_symbol}")
-        st.markdown(f"**TradingView:** {tradingview_symbol}")
+    with info_col:
+        st.markdown("### 🧠 AI Intelligence")
         
-        if trading_state.running:
-            st.success("🟢 **LIVE TRADING**")
-        else:
-            st.warning("⚪ **STOPPED**")
+        # AI Status with colored indicators
+        regime_colors = {
+            'TREND': '🟢',
+            'SIDEWAYS': '🟡', 
+            'VOLATILE': '🔴',
+            'Unknown': '⚪'
+        }
+        regime_icon = regime_colors.get(trading_state.current_regime, '⚪')
+        
+        st.markdown(f"""
+        <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,217,255,0.2); margin-bottom: 10px;'>
+            <p style='margin: 0; color: #b0b0b0; font-size: 11px;'>MARKET REGIME</p>
+            <p style='margin: 5px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 600;'>{regime_icon} {trading_state.current_regime}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,217,255,0.2); margin-bottom: 10px;'>
+            <p style='margin: 0; color: #b0b0b0; font-size: 11px;'>ACTIVE STRATEGY</p>
+            <p style='margin: 5px 0 0 0; color: #00d9ff; font-size: 16px; font-weight: 600;'>🎯 {trading_state.current_strategy}</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.markdown("---")
-        st.markdown("### 🧠 AI Status")
-        st.markdown(f"**Regime:** {trading_state.current_regime}")
-        st.markdown(f"**Strategy:** {trading_state.current_strategy}")
+        st.markdown("### 📊 Asset Details")
+        st.markdown(f"**Symbol:** `{selected_symbol}`")
+        st.markdown(f"**Exchange:** `{tradingview_symbol.split(':')[0]}`")
+        st.markdown(f"**Type:** `{asset_category}`")
+        
+        # Show error notification if there are recent errors
+        recent_errors = [e for e in trading_state.error_log if e['severity'] == 'ERROR']
+        if recent_errors:
+            st.markdown("---")
+            st.error(f"⚠️ {len(recent_errors)} error(s)")
     
     st.markdown("---")
-    
-    # Show error notification if there are recent errors
-    recent_errors = [e for e in trading_state.error_log if e['severity'] == 'ERROR']
-    if recent_errors:
-        st.error(f"⚠️ {len(recent_errors)} error(s) detected! Check the 🐛 Error Log tab for details.")
-    
-    if not check_configuration():
-        st.error("⚠️ API keys not configured! Go to Settings tab to configure.")
-        return
     
     # AI Recommendations section
     st.subheader("🧠 AI Recommendations")
@@ -1952,6 +2132,127 @@ def main():
             border-color: rgba(0, 217, 255, 0.3);
         }
         
+        /* Professional Navigation Buttons */
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            margin: 6px 0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            user-select: none;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(0, 217, 255, 0.12);
+            border-color: rgba(0, 217, 255, 0.4);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.15);
+        }
+        
+        .nav-btn.active {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.18) 0%, rgba(76, 175, 254, 0.18) 100%);
+            border-color: #00d9ff;
+            color: #00d9ff;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+        
+        .nav-btn svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        
+        .nav-btn.active svg {
+            filter: drop-shadow(0 0 4px rgba(0, 217, 255, 0.6));
+        }
+        
+        .nav-btn:active {
+            transform: translateX(2px) scale(0.98);
+        }
+        
+        /* Style Streamlit navigation buttons to match nav-btn */
+        [data-testid="stSidebar"] .stButton > button {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 10px !important;
+            color: #e0e0e0 !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            padding: 14px 16px !important;
+            margin: 6px 0 !important;
+            width: 100% !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button:hover {
+            background: rgba(0, 217, 255, 0.12) !important;
+            border-color: rgba(0, 217, 255, 0.4) !important;
+            transform: translateX(4px) !important;
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.15) !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.18) 0%, rgba(76, 175, 254, 0.18) 100%) !important;
+            border-color: #00d9ff !important;
+            color: #00d9ff !important;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3) !important;
+        }
+        
+        /* Navigation Group Header */
+        .nav-group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            margin: -20px 0 12px 0;
+            color: #b0b0b0;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Sidebar Logo */
+        .sidebar-logo {
+            text-align: center;
+            padding: 24px 0;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-logo-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            display: block;
+        }
+        
+        .sidebar-logo-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+        
+        .sidebar-logo-subtitle {
+            margin: 4px 0 0 0;
+            color: #00d9ff;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
         /* Headers with Gradient */
         h1, h2, h3 {
             color: #ffffff;
@@ -2061,54 +2362,74 @@ def main():
     
     # Sidebar navigation
     with st.sidebar:
-        # Professional Header with Trading Chart Icon
-        st.markdown("""
-            <div style='text-align: center; padding: 20px 0;'>
-                <div style='font-size: 48px; margin-bottom: 10px;'>📈</div>
-                <h1 style='margin: 0; font-size: 28px; font-weight: 700;'>Kiwi AI</h1>
-                <p style='margin: 5px 0 0 0; color: #00d9ff; font-size: 12px; font-weight: 500;'>TRADING SYSTEM</p>
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown("---")
-        
         # Initialize page in session state if not exists
         if 'current_page' not in st.session_state:
             st.session_state.current_page = "Dashboard"
         
-        # Navigation with collapsible groups
-        # Dashboard & Control grouped together
-        with st.expander("📊 Dashboard & Control", expanded=st.session_state.current_page in ["Dashboard", "Control"]):
-            # Determine current index
-            current_index = 0 if st.session_state.current_page == "Dashboard" else (1 if st.session_state.current_page == "Control" else 0)
-            nav_choice = st.radio(
-                "Main Navigation",
-                ["Dashboard", "Control"],
-                label_visibility="collapsed",
-                key="main_nav",
-                index=current_index,
-                format_func=lambda x: {
-                    "Dashboard": "📊  Dashboard",
-                    "Control": "▶  Control"
-                }[x]
-            )
-            # Update page if radio changed
-            if nav_choice != st.session_state.current_page:
-                st.session_state.current_page = nav_choice
+        # Professional Header with SVG Logo
+        st.markdown("""
+            <div class="sidebar-logo">
+                <svg class="sidebar-logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00d9ff;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#4cafff;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M24 4L8 14V34L24 44L40 34V14L24 4Z" stroke="url(#logoGradient)" stroke-width="2" fill="rgba(0, 217, 255, 0.1)"/>
+                    <path d="M24 12L14 18V30L24 36L34 30V18L24 12Z" fill="url(#logoGradient)"/>
+                    <circle cx="24" cy="24" r="3" fill="#0f0c29"/>
+                    <path d="M20 20L24 24L28 20" stroke="#0f0c29" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M20 28L24 24L28 28" stroke="#0f0c29" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <h1 class="sidebar-logo-title">Kiwi AI</h1>
+                <p class="sidebar-logo-subtitle">Trading System</p>
+            </div>
+        """, unsafe_allow_html=True)
+        st.markdown("---")
         
-        # Settings (separate)
-        with st.expander("⚙  Settings", expanded=st.session_state.current_page == "Settings"):
-            if st.button("⚙  Settings", use_container_width=True, key="settings_btn"):
-                st.session_state.current_page = "Settings"
+        # Navigation Menu with Professional Design using Custom HTML
+        st.markdown('<div class="nav-group-header">NAVIGATION</div>', unsafe_allow_html=True)
         
-        # Error Log (separate)
-        with st.expander("⚠  Error Log", expanded=st.session_state.current_page == "Error Log"):
-            if st.button("⚠  Error Log", use_container_width=True, key="error_log_btn"):
-                st.session_state.current_page = "Error Log"
+        # Professional Navigation with clickable divs - All together
+        current_page = st.session_state.current_page
         
-        # Help (separate)
-        with st.expander("ℹ  Help", expanded=st.session_state.current_page == "Help"):
-            if st.button("ℹ  Help", use_container_width=True, key="help_btn"):
-                st.session_state.current_page = "Help"
+        # Check for query parameter navigation and handle clicks
+        query_params = st.query_params
+        if "page" in query_params:
+            page_param = query_params["page"].replace("+", " ")  # Handle URL encoding
+            if page_param in ["Dashboard", "Control", "Settings", "Error Log", "Help"]:
+                st.session_state.current_page = page_param
+            # Clear query params after reading
+            st.query_params.clear()
+            st.rerun()
+        
+        # Create navigation buttons with proper click handlers
+        st.markdown("### NAVIGATION")
+        
+        # Dashboard (merged with Control)
+        dashboard_active = "active" if current_page == "Dashboard" else ""
+        if st.button("Dashboard", key="nav_dashboard", use_container_width=True, type="primary" if dashboard_active else "secondary"):
+            st.session_state.current_page = "Dashboard"
+            st.rerun()
+        
+        # Settings
+        settings_active = "active" if current_page == "Settings" else ""
+        if st.button("Settings", key="nav_settings", use_container_width=True, type="primary" if settings_active else "secondary"):
+            st.session_state.current_page = "Settings"
+            st.rerun()
+        
+        # Error Log
+        error_log_active = "active" if current_page == "Error Log" else ""
+        if st.button("Error Log", key="nav_error_log", use_container_width=True, type="primary" if error_log_active else "secondary"):
+            st.session_state.current_page = "Error Log"
+            st.rerun()
+        
+        # Help
+        help_active = "active" if current_page == "Help" else ""
+        if st.button("Help", key="nav_help", use_container_width=True, type="primary" if help_active else "secondary"):
+            st.session_state.current_page = "Help"
+            st.rerun()
         
         # Update page variable for routing
         page = st.session_state.current_page
@@ -2155,48 +2476,20 @@ def main():
             </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("---")
-        
-        # Real-time features status
-        st.markdown("### Features")
-        
-        rt_status = "ENABLED" if REALTIME_AVAILABLE else "DISABLED"
-        rt_color = "#00ff88" if REALTIME_AVAILABLE else "#ff6b6b"
-        
-        st.markdown(f"""
-            <div style='padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; margin: 10px 0;'>
-                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>REAL-TIME</span>
-                    <span style='color: {rt_color}; font-weight: 600;'>{rt_status}</span>
-                </div>
-                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>STREAMLIT</span>
-                    <span style='color: #00ff88; font-weight: 600;'>ENABLED</span>
-                </div>
-                <div style='display: flex; justify-content: space-between; align-items: center;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>ERRORS</span>
-                    <span style='color: {'#ff6b6b' if len(trading_state.error_log) > 0 else '#00ff88'}; font-weight: 600;'>{len(trading_state.error_log)}</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        if not REALTIME_AVAILABLE:
-            st.caption("Install: pip install alpaca-trade-api")
-        
-        st.markdown("---")
-        st.caption("© 2025 Kiwi AI Trading System")
     
     # Route to appropriate page
     if page == "Dashboard":
         show_dashboard_page()
-    elif page == "Control":
-        show_control_page()
     elif page == "Settings":
         show_settings_page()
     elif page == "Error Log":
         show_error_log_page()
     elif page == "Help":
         show_help_page()
+    else:
+        # Default to dashboard if unknown page
+        st.session_state.current_page = "Dashboard"
+        show_dashboard_page()
     
     # Auto-refresh for live updates (every 5 seconds when running)
     if trading_state.running:
