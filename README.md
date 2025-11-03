@@ -493,25 +493,27 @@ INITIAL_CAPITAL="100000"
 
 ## 📊 Project Status
 
-**Current Version:** 2.0.0 🆕  
-**Latest Update:** November 2, 2025 - TradingView Integration & Multi-Asset Support  
+**Current Version:** 2.1.0 🆕  
+**Latest Update:** November 3, 2025 - Enhanced Chart Display & Connection Management  
 **Phase 1 Completion:** October 17, 2025  
 **Phase 2 Completion:** October 18, 2025  
 **Phase 3 Completion:** October 18, 2025  
 **Phase 4 Completion:** October 19, 2025  
 **Phase 5 Completion:** October 20, 2025 (Consolidation & UI Upgrade)  
 **v2.0 Release:** November 2, 2025 (TradingView & Multi-Asset)  
-**Total Lines of Code:** 9,000+  
+**v2.1 Release:** November 3, 2025 (Chart Optimization & WebSocket Stability)  
+**Total Lines of Code:** 9,500+  
 **Test Coverage:** 100% for all phases  
 **Strategies Implemented:** 3  
 **AI Components:** 3 (Regime Detector, Performance Monitor, Strategy Selector)  
 **Execution Modules:** 2 (Broker Interface, Risk Manager)  
 **Main Application:** `run_kiwi.py` (All-in-one web dashboard)  
 **Trading Modes:** Real-Time Only (Auto-Start WebSocket streaming)  
-**Charts:** Professional TradingView integration with live data  
+**Charts:** Professional TradingView integration - Full-width, optimized display  
 **Supported Assets:** 27 instruments across 5 categories (Stocks, Forex, Crypto, Indices, Commodities)  
 **UI:** Professional liquid-style dashboard with glass morphism  
-**Status:** ✅ Production Ready - Multi-Asset Trading with Real-Time Charts
+**Connection Management:** Advanced WebSocket handling with retry logic  
+**Status:** ✅ Production Ready - Stable Multi-Asset Trading with Optimized Charts
 
 ## 🤝 Contributing
 

@@ -97,6 +97,7 @@ class TradingState:
             st.session_state.last_signal = None
             st.session_state.position_state = None
             st.session_state.notification = None
+            st.session_state.connecting = False  # Flag to prevent multiple connection attempts
             st.session_state.initialized = True
     
     @property
@@ -234,6 +235,14 @@ class TradingState:
     @notification.setter
     def notification(self, value):
         st.session_state.notification = value
+    
+    @property
+    def connecting(self):
+        return st.session_state.get('connecting', False)
+        
+    @connecting.setter
+    def connecting(self, value):
+        st.session_state.connecting = value
 
         
 trading_state = TradingState()
@@ -826,26 +835,71 @@ def run_realtime_trading(settings: dict):
         logger.logger.error(f"Could not pre-fill bar history: {e}")
 
     
-    # Close any existing WebSocket connection first
-    if trading_state.stream is not None:
-        try:
-            logger.logger.info("🔌 Closing existing WebSocket connection...")
-            trading_state.stream.stop()
-            time.sleep(2)  # Give time to properly close
-        except Exception as e:
-            logger.logger.warning(f"Warning closing old stream: {e}")
-        trading_state.stream = None
+    # Prevent multiple connection attempts
+    if trading_state.connecting:
+        logger.logger.warning("⚠️ Connection attempt already in progress, skipping...")
+        return
     
-    # Initialize WebSocket
-    stream = tradeapi.Stream(
-        settings['alpaca_key'],
-        settings['alpaca_secret'],
-        base_url='https://paper-api.alpaca.markets' if settings['is_paper_trading'] else 'https://api.alpaca.markets',
-        data_feed='iex'
-    )
+    trading_state.connecting = True
     
-    # Store in global state
-    trading_state.stream = stream
+    try:
+        # Close any existing WebSocket connection first
+        if trading_state.stream is not None:
+            try:
+                logger.logger.info("🔌 Closing existing WebSocket connection...")
+                trading_state.stream.stop()
+                time.sleep(3)  # Give more time to properly close
+                trading_state.stream = None
+                logger.logger.info("✅ Existing connection closed")
+            except Exception as e:
+                logger.logger.warning(f"Warning closing old stream: {e}")
+                trading_state.stream = None
+        
+        # Wait a bit to ensure connection is fully closed
+        time.sleep(2)
+        
+        # Initialize WebSocket with retry logic
+        max_retries = 3
+        retry_count = 0
+        stream = None
+        
+        while retry_count < max_retries and trading_state.running:
+            try:
+                logger.logger.info(f"Initializing WebSocket connection (attempt {retry_count + 1}/{max_retries})...")
+                stream = tradeapi.Stream(
+                    settings['alpaca_key'],
+                    settings['alpaca_secret'],
+                    base_url='https://paper-api.alpaca.markets' if settings['is_paper_trading'] else 'https://api.alpaca.markets',
+                    data_feed='iex'
+                )
+                logger.logger.info("✅ WebSocket initialized successfully")
+                break
+            except Exception as e:
+                logger.logger.error(f"Failed to initialize WebSocket: {e}")
+                retry_count += 1
+                if retry_count < max_retries:
+                    logger.logger.info(f"Retrying in 5 seconds...")
+                    time.sleep(5)  # Wait before retry
+                else:
+                    logger.logger.error("❌ Max retries reached. Cannot establish WebSocket connection.")
+                    logger.logger.error("💡 Please wait at least 5 minutes before trying again (connection limit).")
+                    trading_state.running = False
+                    trading_state.connecting = False
+                    return
+        
+        if stream is None or not trading_state.running:
+            logger.logger.error("Could not initialize stream or trading was stopped")
+            trading_state.connecting = False
+            return
+        
+        # Store in global state
+        trading_state.stream = stream
+        
+    except Exception as e:
+        logger.logger.error(f"Unexpected error during connection setup: {e}")
+        trading_state.running = False
+        trading_state.connecting = False
+        return
     
     async def handle_bar(bar):
         """Process incoming bar data."""
@@ -912,22 +966,51 @@ def run_realtime_trading(settings: dict):
 
     
     # Subscribe
-    for symbol in symbols:
-        stream.subscribe_bars(handle_bar, symbol)
+    try:
+        for symbol in symbols:
+            stream.subscribe_bars(handle_bar, symbol)
+        
+        logger.logger.info("✅ WebSocket subscribed to symbols")
+    except Exception as e:
+        logger.logger.error(f"Failed to subscribe to symbols: {e}")
+        trading_state.running = False
+        trading_state.stream = None
+        return
     
-    logger.logger.info("✅ WebSocket connected")
+    logger.logger.info("✅ Starting WebSocket stream...")
     
     try:
         stream.run()
+    except ValueError as e:
+        error_msg = str(e)
+        if "connection limit exceeded" in error_msg or "429" in error_msg:
+            logger.logger.error("⚠️ CONNECTION LIMIT EXCEEDED")
+            logger.logger.error("━" * 50)
+            logger.logger.error("Alpaca's free tier has connection limits.")
+            logger.logger.error("Please wait 5-10 minutes before restarting.")
+            logger.logger.error("💡 Always use the Stop button before closing!")
+            logger.logger.error("━" * 50)
+        else:
+            logger.logger.error(f"Stream error: {e}")
+        trading_state.running = False
     except Exception as e:
         logger.logger.error(f"Stream error: {e}")
+        trading_state.running = False
     finally:
         try:
-            stream.stop()
-            logger.logger.info("✅ Stream stopped")
+            if stream is not None:
+                logger.logger.info("🔌 Stopping stream...")
+                stream.stop()
+                time.sleep(2)
+                logger.logger.info("✅ Stream stopped cleanly")
         except Exception as e:
             logger.logger.warning(f"Error stopping stream: {e}")
+        
+        # Ensure cleanup
         trading_state.stream = None
+        trading_state.connecting = False
+        logger.logger.info("✅ Connection cleanup complete")
+        time.sleep(2)  # Give time for cleanup
 
 
 # ============================================================================
@@ -1231,27 +1314,46 @@ def show_dashboard_page():
         if trading_state.running:
             if st.button("🛑 Stop Trading", use_container_width=True, type="secondary"):
                 try:
+                    # First stop the trading flag
                     trading_state.running = False
+                    logger.logger.info("🛑 Stopping trading system...")
                     
-                    # Close WebSocket connection if exists
+                    # Close WebSocket connection with proper cleanup
                     if trading_state.stream is not None:
                         try:
                             logger.logger.info("🔌 Closing WebSocket connection...")
                             trading_state.stream.stop()
-                            time.sleep(1)
+                            time.sleep(3)  # Give more time for proper cleanup
                             trading_state.stream = None
+                            logger.logger.info("✅ WebSocket closed successfully")
                         except Exception as e:
                             logger.logger.warning(f"Warning closing WebSocket: {e}")
                             trading_state.stream = None
                     
-                    st.success("✅ Trading stopped!")
+                    # Wait for thread to finish
+                    if trading_state.thread is not None:
+                        trading_state.thread.join(timeout=5)
+                        trading_state.thread = None
+                    
+                    st.success("✅ Trading stopped! Waiting 5 seconds before allowing restart...")
                     logger.logger.info("Trading stopped via UI")
-                    time.sleep(1)
+                    time.sleep(5)  # Prevent immediate restart
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
+                    logger.logger.error(f"Error stopping trading: {e}")
         else:
             if st.button("🚀 Start Trading", use_container_width=True, type="primary"):
+                # Check if there's already an active stream
+                if trading_state.stream is not None:
+                    st.warning("⚠️ Cleaning up existing connection first...")
+                    try:
+                        trading_state.stream.stop()
+                        time.sleep(3)
+                        trading_state.stream = None
+                    except:
+                        pass
+                
                 st.info("🚀 Starting Real-Time Trading System...")
                 try:
                     trading_state.running = True
@@ -1271,6 +1373,7 @@ def show_dashboard_page():
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Failed to start: {e}")
+                    logger.logger.error(f"Failed to start trading: {e}")
     
     # Get current asset info
     selected_symbol = settings.get('trading_symbol', 'SPY')
@@ -1307,63 +1410,80 @@ def show_dashboard_page():
     # ============================================================================
     st.subheader(f"📊 {selected_asset_name} - Real-Time Chart")
     
-    chart_col, info_col = st.columns([4, 1])
+    chart_col, info_col = st.columns([6, 1])
     
     with chart_col:
         # Embed TradingView Advanced Chart with professional settings
         tradingview_html = f"""
         <!DOCTYPE html>
-        <html>
+        <html style="height: 100%; margin: 0; padding: 0;">
         <head>
             <style>
-                body {{ margin: 0; padding: 0; background: #0f0c29; }}
+                * {{
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }}
+                html, body {{
+                    height: 100%;
+                    width: 100%;
+                    overflow: hidden;
+                    background: #0f0c29;
+                }}
                 .tradingview-widget-container {{ 
-                    height: 600px; 
-                    width: 100%; 
+                    height: 100%;
+                    width: 100%;
                     border-radius: 12px;
                     overflow: hidden;
                     box-shadow: 0 8px 32px rgba(0, 217, 255, 0.15);
                     border: 1px solid rgba(0, 217, 255, 0.2);
+                    display: flex;
+                    flex-direction: column;
+                }}
+                #tradingview_chart {{
+                    height: 100% !important;
+                    width: 100% !important;
                 }}
             </style>
         </head>
         <body>
             <div class="tradingview-widget-container">
               <div id="tradingview_chart"></div>
-              <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-              <script type="text/javascript">
-                new TradingView.widget({{
-                  "autosize": true,
-                  "symbol": "{tradingview_symbol}",
-                  "interval": "5",
-                  "timezone": "America/New_York",
-                  "theme": "dark",
-                  "style": "1",
-                  "locale": "en",
-                  "toolbar_bg": "#0f0c29",
-                  "enable_publishing": false,
-                  "hide_top_toolbar": false,
-                  "hide_legend": false,
-                  "save_image": true,
-                  "container_id": "tradingview_chart",
-                  "backgroundColor": "rgba(15, 12, 41, 1)",
-                  "gridColor": "rgba(0, 217, 255, 0.06)",
-                  "hide_volume": false,
-                  "support_host": "https://www.tradingview.com",
-                  "studies": [
-                    "RSI@tv-basicstudies",
-                    "MASimple@tv-basicstudies"
-                  ],
-                  "show_popup_button": true,
-                  "popup_width": "1000",
-                  "popup_height": "650"
-                }});
-              </script>
             </div>
+            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+            <script type="text/javascript">
+              new TradingView.widget({{
+                "width": "100%",
+                "height": "100%",
+                "symbol": "{tradingview_symbol}",
+                "interval": "5",
+                "timezone": "America/New_York",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#0f0c29",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": true,
+                "container_id": "tradingview_chart",
+                "backgroundColor": "rgba(15, 12, 41, 1)",
+                "gridColor": "rgba(0, 217, 255, 0.06)",
+                "hide_volume": false,
+                "support_host": "https://www.tradingview.com",
+                "studies": [
+                  "RSI@tv-basicstudies",
+                  "MASimple@tv-basicstudies"
+                ],
+                "show_popup_button": true,
+                "popup_width": "1000",
+                "popup_height": "650"
+              }});
+            </script>
         </body>
         </html>
         """
-        components.html(tradingview_html, height=600)
+        components.html(tradingview_html, height=700)
     
     with info_col:
         st.markdown("### 🧠 AI Intelligence")
