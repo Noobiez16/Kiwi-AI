@@ -68,9 +68,9 @@ The app includes a **visual settings manager** - configure everything through th
 - **Risk Management** - Built-in safety features
 - **Paper Trading** - Test with fake money first (default enabled)
 
-## 🏁 Current Status: v2.0 Complete ✅
+## 🏁 Current Status: v2.2.1 Complete ✅
 
-**Latest Update:** November 2, 2025 - TradingView Integration & Multi-Asset Support!
+**Latest Update:** November 5, 2025 - Enhanced UX & Faster AI Initialization!
 
 📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)** | 🚀 **[Deployment Guide](DEPLOYMENT.md)**
 
@@ -493,8 +493,8 @@ INITIAL_CAPITAL="100000"
 
 ## 📊 Project Status
 
-**Current Version:** 2.1.0 🆕  
-**Latest Update:** November 3, 2025 - Enhanced Chart Display & Connection Management  
+**Current Version:** 2.2.1 🆕  
+**Latest Update:** November 5, 2025 - Enhanced UX & Faster AI Initialization  
 **Phase 1 Completion:** October 17, 2025  
 **Phase 2 Completion:** October 18, 2025  
 **Phase 3 Completion:** October 18, 2025  
@@ -502,6 +502,8 @@ INITIAL_CAPITAL="100000"
 **Phase 5 Completion:** October 20, 2025 (Consolidation & UI Upgrade)  
 **v2.0 Release:** November 2, 2025 (TradingView & Multi-Asset)  
 **v2.1 Release:** November 3, 2025 (Chart Optimization & WebSocket Stability)  
+**v2.2 Release:** November 5, 2025 (AI Intelligence & Real-Time Recommendations)  
+**v2.2.1 Release:** November 5, 2025 (Enhanced UX & Faster AI Initialization)  
 **Total Lines of Code:** 9,500+  
 **Test Coverage:** 100% for all phases  
 **Strategies Implemented:** 3  

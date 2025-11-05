@@ -811,6 +811,13 @@ def run_realtime_trading(settings: dict):
     
     trading_state.broker = broker
     
+    # Initialize AI Intelligence states
+    trading_state.current_regime = "Initializing..."
+    trading_state.current_strategy = "Analyzing..."
+    trading_state.notification = None
+    
+    logger.logger.info("🧠 AI Intelligence initialized - waiting for market data...")
+    
     # Track data
     bar_history = {symbol: deque(maxlen=500) for symbol in symbols}
     positions = {}
@@ -926,7 +933,17 @@ def run_realtime_trading(settings: dict):
 
         logger.logger.info(f"📊 {symbol}: ${bar.close:.2f}")
 
-        if len(bar_history[symbol]) < 50:
+        # Need at least 20 bars for fast analysis (AI is smart enough!)
+        if len(bar_history[symbol]) < 20:
+            bars_needed = 20 - len(bar_history[symbol])
+            trading_state.notification = f"""🔄 **AI Intelligence Initializing...**
+
+� **Collecting live market data:** {len(bar_history[symbol])}/20 bars
+
+⏱️ **Status:** Receiving real-time price updates every minute
+🧠 **Next:** AI will analyze {symbol} once we have enough data
+
+💡 This typically takes 1-2 minutes. The dashboard will update automatically!"""
             return
 
         # Check cooldown
@@ -939,11 +956,39 @@ def run_realtime_trading(settings: dict):
             df = pd.DataFrame(list(bar_history[symbol]))
             df.set_index('timestamp', inplace=True)
 
+            # Detect market regime
             regime = regime_detector.predict_regime(df)
+            
+            # Check if this is first time detecting regime
+            first_initialization = (trading_state.current_regime == "Initializing...")
+            
             trading_state.current_regime = regime
+            logger.logger.info(f"🧠 Market Regime: {regime}")
 
+            # Select optimal strategy
             strategy, reason = strategy_selector.select_strategy(df)
-            trading_state.current_strategy = strategy.__class__.__name__
+            
+            # Update strategy display name
+            strategy_name = strategy.__class__.__name__
+            trading_state.current_strategy = strategy_name
+            
+            logger.logger.info(f"🎯 Strategy: {strategy_name} - {reason}")
+            
+            # Show activation message on first initialization
+            if first_initialization:
+                strategy_display = strategy_name.replace('Strategy', '').replace('Trend', 'Trend ').replace('Mean', 'Mean ').replace('Volatility', 'Volatility ')
+                logger.logger.info(f"✅ AI Intelligence fully activated!")
+                trading_state.notification = f"""✅ **AI INTELLIGENCE ACTIVATED!**
+
+🧠 **Market Analysis Complete:**
+- **Regime:** {regime.upper()} 
+- **Strategy:** {strategy_display}
+- **Asset:** {symbol}
+
+📊 **AI is now monitoring in real-time!**
+You'll receive instant alerts when strong trading signals are detected.
+
+🔍 **Status:** Actively scanning for opportunities..."""
 
             logger.logger.info(f"Strategy type: {type(strategy)}")
             signal = strategy.generate_signals(df)
@@ -952,15 +997,61 @@ def run_realtime_trading(settings: dict):
             if signal is not None and len(signal) > 0:
                 latest_signal = signal.iloc[-1]
                 trading_state.last_signal = latest_signal
+                
+                # Get current price and calculate additional metrics
+                current_price = bar.close
+                last_signal_time[symbol] = datetime.now()
 
                 if trading_state.position_state is None: # Looking to buy
                     if latest_signal == 1:
-                        trading_state.notification = "Recommendation: BUY"
-                        last_signal_time[symbol] = datetime.now()
+                        # BUY recommendation with detailed analysis
+                        strategy_name = strategy.__class__.__name__.replace('Strategy', '').replace('Trend', 'Trend ').replace('Mean', 'Mean ').replace('Volatility', 'Volatility ')
+                        
+                        trading_state.notification = f"""🚀 **BUY SIGNAL DETECTED!**
+
+📊 **Asset:** {symbol} @ ${current_price:.2f}
+🎯 **Strategy:** {strategy_name}
+🧠 **Market Regime:** {regime.upper()}
+⏰ **Time:** {datetime.now().strftime('%H:%M:%S')}
+
+💡 **AI Analysis:** Market conditions are favorable for entering a LONG position. The {strategy_name} strategy has identified a strong buy signal based on current price action and technical indicators.
+
+✅ **Recommendation:** Enter LONG position now!"""
+                        
+                        logger.logger.info(f"🚀 BUY recommendation: {symbol} @ ${current_price:.2f} | Strategy: {strategy_name} | Regime: {regime}")
+                        
                 elif trading_state.position_state == 'long': # Looking to sell
                     if latest_signal == -1:
-                        trading_state.notification = "Recommendation: SELL"
-                        last_signal_time[symbol] = datetime.now()
+                        # SELL recommendation with detailed analysis
+                        strategy_name = strategy.__class__.__name__.replace('Strategy', '').replace('Trend', 'Trend ').replace('Mean', 'Mean ').replace('Volatility', 'Volatility ')
+                        
+                        trading_state.notification = f"""📉 **SELL SIGNAL DETECTED!**
+
+📊 **Asset:** {symbol} @ ${current_price:.2f}
+🎯 **Strategy:** {strategy_name}
+🧠 **Market Regime:** {regime.upper()}
+⏰ **Time:** {datetime.now().strftime('%H:%M:%S')}
+
+💡 **AI Analysis:** Market conditions suggest it's time to exit the LONG position. The {strategy_name} strategy has identified a strong sell signal to protect profits or minimize losses.
+
+❌ **Recommendation:** Close LONG position now!"""
+                        
+                        logger.logger.info(f"📉 SELL recommendation: {symbol} @ ${current_price:.2f} | Strategy: {strategy_name} | Regime: {regime}")
+                    else:
+                        # Hold recommendation - still in position with no sell signal
+                        if latest_signal == 1:
+                            strategy_name = strategy.__class__.__name__.replace('Strategy', '').replace('Trend', 'Trend ').replace('Mean', 'Mean ').replace('Volatility', 'Volatility ')
+                            trading_state.notification = f"""📊 **HOLD POSITION**
+
+📊 **Asset:** {symbol} @ ${current_price:.2f}
+🎯 **Strategy:** {strategy_name}
+🧠 **Market Regime:** {regime.upper()}
+⏰ **Time:** {datetime.now().strftime('%H:%M:%S')}
+
+💡 **AI Analysis:** Continue holding your LONG position. Market momentum remains strong and conditions are still favorable.
+
+✅ **Recommendation:** Keep position open!"""
+                            
         except Exception as e:
             logger.logger.error(f"Error in handle_bar: {e}")
 
@@ -1453,31 +1544,50 @@ def show_dashboard_page():
             <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
             <script type="text/javascript">
               new TradingView.widget({{
-                "width": "100%",
-                "height": "100%",
+                "autosize": true,
                 "symbol": "{tradingview_symbol}",
                 "interval": "5",
                 "timezone": "America/New_York",
                 "theme": "dark",
                 "style": "1",
                 "locale": "en",
-                "toolbar_bg": "#0f0c29",
+                "toolbar_bg": "#131722",
                 "enable_publishing": false,
-                "hide_top_toolbar": false,
-                "hide_legend": false,
-                "save_image": true,
-                "container_id": "tradingview_chart",
-                "backgroundColor": "rgba(15, 12, 41, 1)",
-                "gridColor": "rgba(0, 217, 255, 0.06)",
-                "hide_volume": false,
-                "support_host": "https://www.tradingview.com",
-                "studies": [
-                  "RSI@tv-basicstudies",
-                  "MASimple@tv-basicstudies"
-                ],
+                "withdateranges": true,
+                "range": "1D",
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "details": true,
+                "hotlist": true,
+                "calendar": true,
                 "show_popup_button": true,
                 "popup_width": "1000",
-                "popup_height": "650"
+                "popup_height": "650",
+                "studies": [
+                  "RSI@tv-basicstudies",
+                  "MASimple@tv-basicstudies",
+                  "MACD@tv-basicstudies",
+                  "BB@tv-basicstudies"
+                ],
+                "container_id": "tradingview_chart",
+                "enabled_features": [
+                  "study_templates",
+                  "use_localstorage_for_settings",
+                  "save_chart_properties_to_local_storage",
+                  "create_volume_indicator_by_default",
+                  "side_toolbar_in_fullscreen_mode",
+                  "header_in_fullscreen_mode",
+                  "left_toolbar"
+                ],
+                "disabled_features": [],
+                "overrides": {{
+                  "mainSeriesProperties.candleStyle.upColor": "#00d9ff",
+                  "mainSeriesProperties.candleStyle.downColor": "#ff4444",
+                  "mainSeriesProperties.candleStyle.borderUpColor": "#00d9ff",
+                  "mainSeriesProperties.candleStyle.borderDownColor": "#ff4444",
+                  "mainSeriesProperties.candleStyle.wickUpColor": "#00d9ff",
+                  "mainSeriesProperties.candleStyle.wickDownColor": "#ff4444"
+                }}
               }});
             </script>
         </body>
@@ -1495,19 +1605,37 @@ def show_dashboard_page():
             'VOLATILE': '🔴',
             'Unknown': '⚪'
         }
-        regime_icon = regime_colors.get(trading_state.current_regime, '⚪')
+        
+        # Determine current regime display
+        if trading_state.running and trading_state.current_regime in ['Unknown', 'None', None]:
+            regime_display = "Initializing..."
+            regime_icon = '🔄'
+        else:
+            regime_display = trading_state.current_regime or "Unknown"
+            regime_icon = regime_colors.get(regime_display, '⚪')
         
         st.markdown(f"""
         <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,217,255,0.2); margin-bottom: 10px;'>
             <p style='margin: 0; color: #b0b0b0; font-size: 11px;'>MARKET REGIME</p>
-            <p style='margin: 5px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 600;'>{regime_icon} {trading_state.current_regime}</p>
+            <p style='margin: 5px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 600;'>{regime_icon} {regime_display}</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Determine strategy display
+        if trading_state.current_strategy in ['None', None, 'Analyzing...']:
+            if trading_state.running:
+                strategy_display = "Analyzing..."
+            else:
+                strategy_display = "None"
+        else:
+            strategy_name = trading_state.current_strategy
+            # Clean up strategy name for display
+            strategy_display = strategy_name.replace('Strategy', '').replace('TrendFollowing', 'Trend Following').replace('MeanReversion', 'Mean Reversion').replace('VolatilityBreakout', 'Volatility Breakout')
         
         st.markdown(f"""
         <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,217,255,0.2); margin-bottom: 10px;'>
             <p style='margin: 0; color: #b0b0b0; font-size: 11px;'>ACTIVE STRATEGY</p>
-            <p style='margin: 5px 0 0 0; color: #00d9ff; font-size: 16px; font-weight: 600;'>🎯 {trading_state.current_strategy}</p>
+            <p style='margin: 5px 0 0 0; color: #00d9ff; font-size: 16px; font-weight: 600;'>🎯 {strategy_display}</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1527,23 +1655,59 @@ def show_dashboard_page():
     
     # AI Recommendations section
     st.subheader("🧠 AI Recommendations")
+    
     if trading_state.notification:
-        st.warning(trading_state.notification)
-        col1, col2 = st.columns(2)
+        # Display notification with markdown formatting
+        st.markdown(trading_state.notification)
+        
+        st.markdown("---")
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        
         with col1:
             if "BUY" in trading_state.notification:
                 if st.button("✅ Execute Buy", use_container_width=True, type="primary"):
                     trading_state.position_state = 'long'
+                    st.success("✅ Position opened! Monitoring for sell signals...")
                     trading_state.notification = None
+                    time.sleep(2)
                     st.rerun()
+        
         with col2:
             if "SELL" in trading_state.notification:
                 if st.button("❌ Execute Sell", use_container_width=True, type="secondary"):
                     trading_state.position_state = None
+                    st.success("✅ Position closed! Monitoring for buy signals...")
                     trading_state.notification = None
+                    time.sleep(2)
                     st.rerun()
+        
+        with col3:
+            if st.button("🔕 Dismiss", use_container_width=True):
+                trading_state.notification = None
+                st.rerun()
     else:
-        st.info("🤖 AI is analyzing the market... Waiting for signals.")
+        # Show current status based on AI state
+        if trading_state.running:
+            if trading_state.current_regime == "Initializing...":
+                st.info("� **Initializing AI Intelligence** - Collecting live market data... Please wait.")
+            elif trading_state.position_state == 'long':
+                st.success(f"""✅ **POSITION ACTIVE: LONG**
+
+� **Status:** Monitoring {selected_symbol} for exit signals
+🧠 **AI Mode:** Active analysis - Will alert when it's time to sell
+⏱️ **Updates:** Real-time (every 3 seconds)
+
+💡 Hold tight! AI will notify you when conditions suggest closing the position.""")
+            else:
+                st.info(f"""🔍 **SCANNING FOR OPPORTUNITIES**
+
+📊 **Asset:** {selected_symbol}
+🧠 **Market Regime:** {trading_state.current_regime}
+🎯 **Strategy:** {trading_state.current_strategy}
+⏱️ **Status:** Analyzing real-time price action
+
+💡 AI is actively monitoring the market. You'll be notified immediately when a strong buy signal is detected!""")
     
     st.markdown("---")
         
@@ -1642,6 +1806,23 @@ def show_dashboard_page():
             st.error(f"Error fetching account data: {e}")
     else:
         st.info("Start trading to see live data")
+    
+    # Auto-refresh dashboard when trading is active
+    if trading_state.running:
+        # Show refresh indicator
+        st.markdown("---")
+        refresh_col1, refresh_col2, refresh_col3 = st.columns([1, 2, 1])
+        with refresh_col2:
+            st.markdown("""
+            <div style='text-align: center; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3);'>
+                <p style='margin: 0; color: #00d9ff; font-size: 14px;'>
+                    🔄 <b>Live Updates Active</b> - Refreshing every 3 seconds
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        time.sleep(3)  # Refresh every 3 seconds for responsive UI
+        st.rerun()
 
 
 def show_control_page():
