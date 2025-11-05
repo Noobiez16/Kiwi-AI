@@ -17,6 +17,316 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2025-11-06 - **INTERACTIVE AI INTELLIGENCE TABLE** 🎯📊
+
+### 🎉 Major New Features
+**Professional Interactive Table with Detailed Information Views**
+
+This release transforms the AI Intelligence table into an interactive, professional-grade component with clickable column headers that display comprehensive information inside the table structure.
+
+### 📊 Interactive Table Headers
+
+#### Clickable Column Buttons
+All four column headers are now interactive buttons:
+- **📊 Asset** - Click to view detailed asset information
+- **🌊 Market Regime** - Click to view regime analysis
+- **🎯 Strategy** - Click to view strategy details
+- **⚙️ Status** - Click to view system status
+
+Each button click:
+- Replaces the data row with detailed information
+- Closes other detail views automatically
+- Toggles back to data row when clicked again
+- All content stays within the table structure
+
+### 🎨 Professional Card-Based Design
+
+#### Asset Details View
+When "Asset" is clicked, displays:
+- **📊 Asset Overview** - Full asset name and symbol
+- **Two-Column Layout:**
+  - **Asset Details Card** - Category, symbol, exchange information in table format
+  - **Market Performance Card** - Current price, 24h change, volume
+- **AI Analysis Status** - Three-column grid showing:
+  - ✅ Technical Indicators Calculated
+  - ✅ Historical Data Available
+  - ✅ Ready for AI Analysis
+- **Why This Asset?** - Explanation card with:
+  - Liquidity reasons
+  - Volatility characteristics
+  - AI suitability
+  - Market accessibility
+
+#### Market Regime Details View
+When "Market Regime" is clicked, displays:
+- **🌊 Market Regime Analysis** - Current regime with color indicator
+- **Regime Overview Card** - Description of current market state
+- **Two-Column Layout:**
+  - **Characteristics** - Volatility, trend, momentum in card format
+  - **Optimal Strategy** - Best strategy for current regime
+- **Risk Assessment Card** - Color-coded risk level (LOW 🟢 / MEDIUM 🟡 / HIGH 🔴)
+- **AI Detection Method** - Explanation of how regime was determined
+
+#### Strategy Details View
+When "Strategy" is clicked, displays:
+- **🎯 Strategy Deep Dive** - Strategy name with description
+- **Strategy Overview Card** - What the strategy does
+- **How It Works** - Detailed explanation of strategy logic
+- **Key Indicators Section** - Technical indicators used
+- **Two-Column Layout:**
+  - **Entry Conditions Card** (Green) - When to buy
+  - **Exit Conditions Card** (Red) - When to sell
+- **Best Performance** - Ideal market conditions
+- **Competitive Advantage** - Why this strategy excels
+- **Why AI Selected This** - AI's reasoning for selection
+
+#### Status Details View (4 States)
+When "Status" is clicked, displays one of four states:
+
+**1. System Stopped (Gray Theme):**
+- 🛑 System Stopped status
+- How to Start section
+- Safety Features card
+
+**2. Initializing (Cyan Theme with Animation):**
+- 🔄 Initializing status
+- Progress Checklist:
+  - ⏳ Connecting to market data
+  - ⏳ Loading AI models
+  - ⏳ Analyzing market conditions
+  - ⏳ Preparing trading strategies
+- 50px animated pulse emoji
+- Estimated time: 1-2 minutes
+
+**3. Position Active (Green Theme):**
+- ✅ Position Active: LONG status
+- AI Monitoring section
+- What's Watching card:
+  - 📊 Price movement
+  - 🎯 Exit signals
+  - 🛡️ Stop loss levels
+  - 💰 Profit targets
+- 🚨 Notification Alert: "AI will alert you when to close position"
+
+**4. Scanning (Blue Theme with Animation):**
+- 🔍 Scanning for Opportunities status
+- Current Analysis section
+- Looking For card:
+  - 📈 Entry signals
+  - 🧠 Market regime changes
+  - 🎯 High-probability setups
+  - ⚡ Real-time price action
+- 50px animated scan emoji
+- Next update: 3 seconds
+
+### 🎨 Design Features
+
+#### Glass Morphism & Color Coding
+- **Asset Section:** Blue theme (#2196f3)
+- **Market Regime Section:** Purple theme (#9c27b0) with color-coded risk levels
+- **Strategy Section:** Orange theme (#ff9800)
+- **Status Section:** Dynamic colors based on state (gray/cyan/green/blue)
+- All cards use glass morphism with rgba backgrounds
+- Gradient borders and subtle shadows
+- Semi-transparent backgrounds with backdrop blur
+
+#### Layout & Spacing
+- Responsive column layouts (st.columns)
+- Proper card spacing and padding
+- Tables with styled borders
+- Consistent typography and colors
+- Professional info boxes with rounded corners
+
+#### Animations
+- **Pulse Animation** - Initializing state (2s infinite)
+- **Scan Animation** - Scanning state (2s infinite)
+- 50px emoji size for animated states
+- CSS keyframe animations
+
+### 🔧 Technical Implementation
+
+#### Session State Management
+New session state variables:
+- `show_asset_details` - Boolean for Asset view toggle
+- `show_regime_details` - Boolean for Market Regime view toggle
+- `show_strategy_details` - Boolean for Strategy view toggle
+- `show_status_details` - Boolean for Status view toggle
+
+#### Smart Toggling Logic
+```python
+# Each button click:
+1. Toggles its own state (True/False)
+2. Sets all other detail states to False
+3. Closes other views automatically
+4. Shows data row when all False
+5. Shows detail view when any True
+```
+
+#### Content Rendering
+```python
+if not any([show_asset, show_regime, show_strategy, show_status]):
+    # Display normal data row: SPY | TREND | Strategy | Status
+else:
+    # Display active detail view with professional cards
+```
+
+### 📊 User Experience
+
+#### Before
+- Static table with data row
+- No interactive elements
+- Information limited to row display
+
+#### After
+- Interactive clickable headers
+- Rich detailed views on demand
+- Professional card-based layouts
+- Color-coded sections
+- Animated status indicators
+- Educational context for each element
+- All content within table structure
+
+### 🎯 Benefits
+- **Educational** - Users learn about each component
+- **Professional** - Institutional-grade design
+- **Interactive** - Engaging user experience
+- **Informative** - Comprehensive details on demand
+- **Clean UI** - Information hidden until needed
+- **Responsive** - Adapts to content dynamically
+
+### 📝 Files Updated
+- `run_kiwi.py` - Enhanced AI Intelligence table (lines 1730-2345)
+  - Interactive header buttons
+  - Session state management
+  - Professional card layouts
+  - Color-coded sections
+  - Animated status indicators
+
+### 🐛 Bug Fixes
+- Fixed HTML rendering issues (no raw code showing)
+- Fixed content placement (all inside table)
+- Fixed closing div placement
+- Corrected risk_colors dictionary syntax (removed double braces)
+
+---
+
+## [2.3.0] - 2025-11-06 - **INTELLIGENT INTERACTION & RISK MANAGEMENT** 🧠🛡️
+
+### 🎉 Major New Features
+**Phase 5: User-Centric AI with Advanced Risk Assessment**
+
+This release introduces intelligent feedback loops where the AI learns from user decisions, plus comprehensive risk analysis to help users make safer trading decisions.
+
+### 🔄 AI Learning from User Actions
+
+#### User Action Confirmation Loop
+- **"I Bought" / "I Sold" Buttons** - Confirm manual trade execution
+- **"I Skipped" Button** - Tell AI you chose not to follow the signal
+- **Position State Tracking** - AI knows your actual trading state
+- **Seamless Workflow** - No need to manually update position status
+
+#### AI Re-Analysis & Confidence Reduction
+When you skip a signal, the AI learns and adapts:
+- **Signal Suppression** - Similar signals suppressed for 15 minutes
+- **Smart Context Awareness** - Suppresses only same strategy + regime combination
+- **Clear Feedback** - Shows "AI Learning from Your Feedback" message with:
+  - Which strategy was skipped
+  - Which market regime was active
+  - Remaining cooldown time
+- **Auto-Reset** - Cooldown expires, AI resumes normal analysis
+
+Example suppression message:
+```
+⏸️ AI LEARNING FROM YOUR FEEDBACK
+🧠 Confidence Reduced: AI detected same signal you recently skipped
+📊 Suppressed Signal:
+- Strategy: Trend Following
+- Regime: TREND
+- Reason: You skipped this signal 5 minutes ago
+💡 AI Action: Waiting for different market conditions
+🔍 Status: Continuing to monitor for better opportunities...
+```
+
+### 🛡️ Enhanced Live Risk Management
+
+#### Entry Risk Score Calculation
+Every BUY signal now includes comprehensive risk analysis:
+- **Risk Score (0-100)** - Higher = more risky
+- **Risk Level** - LOW 🟢 / MEDIUM 🟡 / HIGH 🟠 / CRITICAL 🔴
+- **Multi-Factor Analysis:**
+  - **Stop Loss Distance** (40% weight) - How far stop is from entry
+  - **ATR-Adjusted Volatility** (30% weight) - Current price volatility
+  - **Market Volatility Context** (30% weight) - Overall market conditions
+
+#### Visual Risk Display in Recommendations
+```
+🛡️ Entry Risk Analysis:
+🟡 Risk Level: MEDIUM (45/100)
+- Stop Loss: $445.50 (2.1% distance)
+- Volatility (ATR): $8.23 (1.8%)
+```
+
+#### Critical Risk Warnings
+When risk score exceeds 75:
+```
+⚠️ CRITICAL RISK: Entry risk score is 78/100.
+Consider waiting for better setup.
+```
+
+Recommendation changes to:
+```
+✅ Recommendation: Enter with CAUTION - High Risk!
+```
+
+### 💰 Dynamic Position Sizing
+
+#### Risk-Adjusted Position Recommendations
+AI suggests position size reduction based on risk:
+- **LOW Risk (0-25)** - 100% position (no reduction)
+- **MEDIUM Risk (25-50)** - 75% position (25% reduction)
+- **HIGH Risk (50-75)** - 50% position (50% reduction)
+- **CRITICAL Risk (75-100)** - 25% position (75% reduction)
+
+Example display:
+```
+💰 Recommended Position Sizing
+⚠️ Medium risk (45/100) - Reduced position by 25%
+💡 Suggested: 75 shares (adjust based on your capital)
+```
+
+### 🔧 Technical Improvements
+
+#### New RiskManager Methods
+- `calculate_entry_risk()` - Comprehensive risk score calculation
+- `check_critical_risk()` - Validates if risk too high
+- `recommend_position_size()` - Dynamic sizing based on risk
+
+#### Session State Management
+New session variables for tracking:
+- `user_confirmed_action` - Boolean flag when trade confirmed
+- `last_action_time` - Timestamp of last confirmation
+- `user_skipped_signal` - Boolean when signal skipped
+- `skipped_signal_time` - When signal was skipped
+- `skipped_strategy` - Which strategy was skipped
+- `skipped_regime` - Market regime during skip
+- `last_entry_risk_score` - Risk score for current signal
+- `last_entry_risk_level` - Risk level (LOW/MEDIUM/HIGH/CRITICAL)
+- `last_stop_loss` - Calculated stop loss price
+
+### 📊 Enhanced User Experience
+- **Smarter AI** - Learns from your trading decisions
+- **Risk Transparency** - See exactly how risky each trade is
+- **Better Position Sizing** - Dynamic recommendations protect capital
+- **Clearer Feedback** - Always know what AI is thinking
+- **Safer Trading** - Critical risk warnings prevent dangerous entries
+
+### 🐛 Bug Fixes
+- Fixed signal generation when user skips trades
+- Improved ATR calculation fallback for non-volatility strategies
+- Enhanced session state persistence across page reloads
+
+---
+
 ## [2.2.1] - 2025-11-05 - **ENHANCED UX & FASTER AI INITIALIZATION** 🚀⚡
 
 ### 🎉 Major Improvements

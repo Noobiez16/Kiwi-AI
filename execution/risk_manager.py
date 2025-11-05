@@ -263,6 +263,172 @@ class RiskManager:
         
         return take_profit
     
+    def calculate_entry_risk(
+        self,
+        entry_price: float,
+        stop_loss_price: float,
+        atr: float = None,
+        current_volatility: float = None
+    ) -> Tuple[float, str, Dict]:
+        """
+        🎯 PHASE 5: Calculate Entry Risk Score for a potential trade.
+        
+        Analyzes multiple risk factors to determine if entry is safe:
+        - Stop loss distance (risk per share)
+        - ATR-adjusted volatility
+        - Risk-reward feasibility
+        
+        Args:
+            entry_price: Proposed entry price
+            stop_loss_price: Proposed stop loss price
+            atr: Average True Range (optional, for volatility assessment)
+            current_volatility: Current market volatility as percentage (optional)
+            
+        Returns:
+            Tuple of (risk_score, risk_level, details_dict)
+            - risk_score: 0-100 (0 = safest, 100 = most risky)
+            - risk_level: 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
+            - details: Dict with breakdown of risk factors
+        """
+        risk_score = 0.0
+        risk_factors = {}
+        
+        # Factor 1: Stop Loss Distance (40% weight)
+        # Measures how far stop loss is from entry
+        stop_distance_pct = abs(entry_price - stop_loss_price) / entry_price * 100
+        
+        if stop_distance_pct < 1.0:
+            stop_risk = 0  # Very tight stop (low risk)
+        elif stop_distance_pct < 2.0:
+            stop_risk = 20  # Normal stop
+        elif stop_distance_pct < 3.5:
+            stop_risk = 40  # Wide stop
+        elif stop_distance_pct < 5.0:
+            stop_risk = 70  # Very wide stop
+        else:
+            stop_risk = 100  # Extremely wide stop (high risk)
+        
+        risk_factors['stop_distance_pct'] = stop_distance_pct
+        risk_factors['stop_risk_score'] = stop_risk
+        risk_score += stop_risk * 0.4  # 40% weight
+        
+        # Factor 2: ATR-Adjusted Volatility (30% weight)
+        # Higher ATR = higher volatility = higher risk
+        if atr is not None and atr > 0:
+            atr_pct = (atr / entry_price) * 100
+            
+            if atr_pct < 1.0:
+                atr_risk = 0  # Low volatility
+            elif atr_pct < 2.0:
+                atr_risk = 25  # Normal volatility
+            elif atr_pct < 3.5:
+                atr_risk = 50  # High volatility
+            elif atr_pct < 5.0:
+                atr_risk = 75  # Very high volatility
+            else:
+                atr_risk = 100  # Extreme volatility
+            
+            risk_factors['atr_pct'] = atr_pct
+            risk_factors['atr_risk_score'] = atr_risk
+            risk_score += atr_risk * 0.3  # 30% weight
+        else:
+            risk_factors['atr_pct'] = None
+            risk_factors['atr_risk_score'] = 0
+        
+        # Factor 3: Market Volatility Context (30% weight)
+        # Overall market volatility adds to risk
+        if current_volatility is not None:
+            if current_volatility < 15:
+                vol_risk = 0  # Low market volatility
+            elif current_volatility < 25:
+                vol_risk = 30  # Normal market volatility
+            elif current_volatility < 40:
+                vol_risk = 60  # High market volatility
+            else:
+                vol_risk = 100  # Extreme market volatility
+            
+            risk_factors['market_volatility_pct'] = current_volatility
+            risk_factors['volatility_risk_score'] = vol_risk
+            risk_score += vol_risk * 0.3  # 30% weight
+        else:
+            risk_factors['market_volatility_pct'] = None
+            risk_factors['volatility_risk_score'] = 0
+        
+        # Determine risk level
+        if risk_score < 25:
+            risk_level = 'LOW'
+        elif risk_score < 50:
+            risk_level = 'MEDIUM'
+        elif risk_score < 75:
+            risk_level = 'HIGH'
+        else:
+            risk_level = 'CRITICAL'
+        
+        details = {
+            'risk_score': round(risk_score, 1),
+            'risk_level': risk_level,
+            'entry_price': entry_price,
+            'stop_loss_price': stop_loss_price,
+            'risk_factors': risk_factors
+        }
+        
+        logger.logger.info(
+            f"Entry Risk Analysis | Score: {risk_score:.1f}/100 | Level: {risk_level} | "
+            f"Stop Distance: {stop_distance_pct:.2f}%"
+        )
+        
+        return risk_score, risk_level, details
+    
+    def check_critical_risk(self, risk_score: float) -> Tuple[bool, str]:
+        """
+        🎯 PHASE 5: Check if entry risk is critically high.
+        
+        Args:
+            risk_score: Risk score from calculate_entry_risk()
+            
+        Returns:
+            Tuple of (is_critical, warning_message)
+        """
+        if risk_score >= 75:
+            warning = f"⚠️ CRITICAL RISK: Entry risk score is {risk_score:.0f}/100. Consider waiting for better setup."
+            return True, warning
+        elif risk_score >= 50:
+            warning = f"⚠️ HIGH RISK: Entry risk score is {risk_score:.0f}/100. Use caution and reduce position size."
+            return False, warning
+        else:
+            return False, ""
+    
+    def recommend_position_size(
+        self,
+        base_quantity: int,
+        risk_score: float
+    ) -> Tuple[int, str]:
+        """
+        🎯 PHASE 5: Recommend adjusted position size based on risk.
+        
+        Args:
+            base_quantity: Original calculated position size
+            risk_score: Risk score from calculate_entry_risk()
+            
+        Returns:
+            Tuple of (adjusted_quantity, explanation)
+        """
+        if risk_score < 25:
+            # Low risk - can use full position
+            return base_quantity, f"✅ Low risk ({risk_score:.0f}/100) - Full position recommended"
+        elif risk_score < 50:
+            # Medium risk - reduce by 25%
+            adjusted = int(base_quantity * 0.75)
+            return adjusted, f"⚠️ Medium risk ({risk_score:.0f}/100) - Reduced position by 25%"
+        elif risk_score < 75:
+            # High risk - reduce by 50%
+            adjusted = int(base_quantity * 0.5)
+            return adjusted, f"⚠️ High risk ({risk_score:.0f}/100) - Reduced position by 50%"
+        else:
+            # Critical risk - reduce by 75%
+            adjusted = int(base_quantity * 0.25)
+            return adjusted, f"🚨 CRITICAL risk ({risk_score:.0f}/100) - Reduced position by 75%"
+    
     def get_risk_summary(self, account_info: Dict, positions: Dict) -> Dict:
         """
         Get a summary of current risk metrics.

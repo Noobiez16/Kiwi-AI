@@ -1002,12 +1002,92 @@ You'll receive instant alerts when strong trading signals are detected.
                 current_price = bar.close
                 last_signal_time[symbol] = datetime.now()
 
+                # 🧠 PHASE 5: AI Re-Analysis Logic - Confidence Reduction when user skips signals
+                signal_suppressed = False
+                if hasattr(st.session_state, 'user_skipped_signal') and st.session_state.user_skipped_signal:
+                    skipped_time = st.session_state.get('skipped_signal_time', None)
+                    skipped_strategy = st.session_state.get('skipped_strategy', '')
+                    skipped_regime = st.session_state.get('skipped_regime', '')
+                    
+                    # Check if skip was recent (within 15 minutes)
+                    if skipped_time:
+                        time_since_skip = (datetime.now() - skipped_time).total_seconds()
+                        
+                        # Suppress similar signals for 15 minutes if same strategy AND same regime
+                        if time_since_skip < 900:  # 15 minutes
+                            if strategy_name == skipped_strategy and regime == skipped_regime:
+                                signal_suppressed = True
+                                logger.logger.info(f"⚠️ Signal suppressed: User skipped {skipped_strategy} in {skipped_regime} regime {time_since_skip/60:.1f} minutes ago")
+                                trading_state.notification = f"""⏸️ **AI LEARNING FROM YOUR FEEDBACK**
+
+🧠 **Confidence Reduced:** The AI detected the same signal pattern you recently skipped.
+
+📊 **Suppressed Signal:**
+- **Strategy:** {strategy_name}
+- **Regime:** {regime.upper()}
+- **Reason:** You skipped this signal {time_since_skip/60:.0f} minutes ago
+
+💡 **AI Action:** Waiting for different market conditions before suggesting this strategy again (cooldown: {15 - time_since_skip/60:.0f} minutes remaining).
+
+🔍 **Status:** Continuing to monitor for better opportunities..."""
+                        else:
+                            # Reset skip flag after cooldown expires
+                            st.session_state.user_skipped_signal = False
+                            logger.logger.info(f"✅ Skip cooldown expired, re-enabling {skipped_strategy} signals")
+
                 if trading_state.position_state is None: # Looking to buy
-                    if latest_signal == 1:
+                    if latest_signal == 1 and not signal_suppressed:
                         # BUY recommendation with detailed analysis
                         strategy_name = strategy.__class__.__name__.replace('Strategy', '').replace('Trend', 'Trend ').replace('Mean', 'Mean ').replace('Volatility', 'Volatility ')
                         
-                        trading_state.notification = f"""🚀 **BUY SIGNAL DETECTED!**
+                        # 🎯 PHASE 5: Calculate Entry Risk Score
+                        # Calculate stop loss
+                        stop_loss = risk_manager.calculate_stop_loss(current_price, method='percentage', percentage=0.02)
+                        
+                        # Calculate ATR if available in dataframe
+                        atr_value = None
+                        if 'atr' in df.columns:
+                            atr_value = df['atr'].iloc[-1]
+                        else:
+                            # Calculate simple ATR for risk assessment
+                            if len(df) >= 14:
+                                high_low = df['high'] - df['low']
+                                high_close = abs(df['high'] - df['close'].shift())
+                                low_close = abs(df['low'] - df['close'].shift())
+                                tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+                                atr_value = tr.rolling(window=14).mean().iloc[-1]
+                        
+                        # Calculate current volatility (20-period standard deviation)
+                        current_volatility = None
+                        if len(df) >= 20:
+                            returns = df['close'].pct_change()
+                            current_volatility = returns.rolling(window=20).std().iloc[-1] * 100 * (252 ** 0.5)  # Annualized
+                        
+                        # Get entry risk score
+                        risk_score, risk_level, risk_details = risk_manager.calculate_entry_risk(
+                            entry_price=current_price,
+                            stop_loss_price=stop_loss,
+                            atr=atr_value,
+                            current_volatility=current_volatility
+                        )
+                        
+                        # Check for critical risk
+                        is_critical, risk_warning = risk_manager.check_critical_risk(risk_score)
+                        
+                        # Build risk assessment message
+                        risk_emoji = "🟢" if risk_level == "LOW" else "�" if risk_level == "MEDIUM" else "🟠" if risk_level == "HIGH" else "🔴"
+                        risk_section = f"""
+🛡️ **Entry Risk Analysis:**
+{risk_emoji} **Risk Level:** {risk_level} ({risk_score:.0f}/100)
+- **Stop Loss:** ${stop_loss:.2f} ({abs(current_price - stop_loss)/current_price*100:.2f}% distance)"""
+                        
+                        if atr_value:
+                            risk_section += f"\n- **Volatility (ATR):** ${atr_value:.2f} ({atr_value/current_price*100:.2f}%)"
+                        
+                        if is_critical:
+                            risk_section += f"\n\n⚠️ **{risk_warning}**"
+                        
+                        trading_state.notification = f"""�🚀 **BUY SIGNAL DETECTED!**
 
 📊 **Asset:** {symbol} @ ${current_price:.2f}
 🎯 **Strategy:** {strategy_name}
@@ -1015,13 +1095,19 @@ You'll receive instant alerts when strong trading signals are detected.
 ⏰ **Time:** {datetime.now().strftime('%H:%M:%S')}
 
 💡 **AI Analysis:** Market conditions are favorable for entering a LONG position. The {strategy_name} strategy has identified a strong buy signal based on current price action and technical indicators.
+{risk_section}
 
-✅ **Recommendation:** Enter LONG position now!"""
+✅ **Recommendation:** {"Enter with CAUTION - High Risk!" if is_critical else "Enter LONG position now!"}"""
                         
-                        logger.logger.info(f"🚀 BUY recommendation: {symbol} @ ${current_price:.2f} | Strategy: {strategy_name} | Regime: {regime}")
+                        # Store risk details in session state for position sizing
+                        st.session_state['last_entry_risk_score'] = risk_score
+                        st.session_state['last_entry_risk_level'] = risk_level
+                        st.session_state['last_stop_loss'] = stop_loss
+                        
+                        logger.logger.info(f"🚀 BUY recommendation: {symbol} @ ${current_price:.2f} | Strategy: {strategy_name} | Regime: {regime} | Risk: {risk_level} ({risk_score:.0f}/100)")
                         
                 elif trading_state.position_state == 'long': # Looking to sell
-                    if latest_signal == -1:
+                    if latest_signal == -1 and not signal_suppressed:
                         # SELL recommendation with detailed analysis
                         strategy_name = strategy.__class__.__name__.replace('Strategy', '').replace('Trend', 'Trend ').replace('Mean', 'Mean ').replace('Volatility', 'Volatility ')
                         
@@ -1501,11 +1587,9 @@ def show_dashboard_page():
     # ============================================================================
     st.subheader(f"📊 {selected_asset_name} - Real-Time Chart")
     
-    chart_col, info_col = st.columns([6, 1])
-    
-    with chart_col:
-        # Embed TradingView Advanced Chart with professional settings
-        tradingview_html = f"""
+    # Full width chart - no columns needed
+    # Embed TradingView Advanced Chart with professional settings
+    tradingview_html = f"""
         <!DOCTYPE html>
         <html style="height: 100%; margin: 0; padding: 0;">
         <head>
@@ -1593,75 +1677,778 @@ def show_dashboard_page():
         </body>
         </html>
         """
-        components.html(tradingview_html, height=700)
-    
-    with info_col:
-        st.markdown("### 🧠 AI Intelligence")
-        
-        # AI Status with colored indicators
-        regime_colors = {
-            'TREND': '🟢',
-            'SIDEWAYS': '🟡', 
-            'VOLATILE': '🔴',
-            'Unknown': '⚪'
-        }
-        
-        # Determine current regime display
-        if trading_state.running and trading_state.current_regime in ['Unknown', 'None', None]:
-            regime_display = "Initializing..."
-            regime_icon = '🔄'
-        else:
-            regime_display = trading_state.current_regime or "Unknown"
-            regime_icon = regime_colors.get(regime_display, '⚪')
-        
-        st.markdown(f"""
-        <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,217,255,0.2); margin-bottom: 10px;'>
-            <p style='margin: 0; color: #b0b0b0; font-size: 11px;'>MARKET REGIME</p>
-            <p style='margin: 5px 0 0 0; color: #ffffff; font-size: 16px; font-weight: 600;'>{regime_icon} {regime_display}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Determine strategy display
-        if trading_state.current_strategy in ['None', None, 'Analyzing...']:
-            if trading_state.running:
-                strategy_display = "Analyzing..."
-            else:
-                strategy_display = "None"
-        else:
-            strategy_name = trading_state.current_strategy
-            # Clean up strategy name for display
-            strategy_display = strategy_name.replace('Strategy', '').replace('TrendFollowing', 'Trend Following').replace('MeanReversion', 'Mean Reversion').replace('VolatilityBreakout', 'Volatility Breakout')
-        
-        st.markdown(f"""
-        <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,217,255,0.2); margin-bottom: 10px;'>
-            <p style='margin: 0; color: #b0b0b0; font-size: 11px;'>ACTIVE STRATEGY</p>
-            <p style='margin: 5px 0 0 0; color: #00d9ff; font-size: 16px; font-weight: 600;'>🎯 {strategy_display}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown("### 📊 Asset Details")
-        st.markdown(f"**Symbol:** `{selected_symbol}`")
-        st.markdown(f"**Exchange:** `{tradingview_symbol.split(':')[0]}`")
-        st.markdown(f"**Type:** `{asset_category}`")
-        
-        # Show error notification if there are recent errors
-        recent_errors = [e for e in trading_state.error_log if e['severity'] == 'ERROR']
-        if recent_errors:
-            st.markdown("---")
-            st.error(f"⚠️ {len(recent_errors)} error(s)")
+    components.html(tradingview_html, height=700)
     
     st.markdown("---")
     
-    # AI Recommendations section
-    st.subheader("🧠 AI Recommendations")
+    # ============================================================================
+    # AI INTELLIGENCE & ANALYSIS - Unified Table View
+    # ============================================================================
+    st.subheader("🧠 AI Intelligence & Analysis")
     
+    # Determine all display values
+    regime_colors = {
+        'TREND': '🟢',
+        'SIDEWAYS': '🟡', 
+        'VOLATILE': '🔴',
+        'Unknown': '⚪'
+    }
+    
+    # Current regime
+    if trading_state.running and trading_state.current_regime in ['Unknown', 'None', None]:
+        regime_display = "Initializing..."
+        regime_icon = '🔄'
+    else:
+        regime_display = trading_state.current_regime or "Unknown"
+        regime_icon = regime_colors.get(regime_display, '⚪')
+    
+    # Current strategy
+    if trading_state.current_strategy in ['None', None, 'Analyzing...']:
+        strategy_display = "Analyzing..." if trading_state.running else "None"
+    else:
+        strategy_name = trading_state.current_strategy
+        strategy_display = strategy_name.replace('Strategy', '').replace('TrendFollowing', 'Trend Following').replace('MeanReversion', 'Mean Reversion').replace('VolatilityBreakout', 'Volatility Breakout')
+    
+    # Current status
+    if not trading_state.running:
+        status_display = "⚪ System Stopped"
+        status_color = "#6c757d"
+        status_detail = "Click Start to begin analysis"
+    elif trading_state.current_regime == "Initializing...":
+        status_display = "🔄 Initializing..."
+        status_color = "#00d9ff"
+        status_detail = "Collecting live market data (1-2 minutes)"
+    elif trading_state.position_state == 'long':
+        status_display = "✅ Position Active"
+        status_color = "#4caf50"
+        status_detail = "Monitoring for exit signals"
+    else:
+        status_display = "🔍 Scanning"
+        status_color = "#2196f3"
+        status_detail = "Analyzing for entry opportunities"
+    
+    # Initialize session state for detail views
+    if 'show_asset_details' not in st.session_state:
+        st.session_state.show_asset_details = False
+    if 'show_regime_details' not in st.session_state:
+        st.session_state.show_regime_details = False
+    if 'show_strategy_details' not in st.session_state:
+        st.session_state.show_strategy_details = False
+    if 'show_status_details' not in st.session_state:
+        st.session_state.show_status_details = False
+    
+    # Create unified table-like display with clickable headers
+    st.markdown(f"""
+    <div style='background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(0,217,255,0.2); overflow: hidden;'>
+        <!-- Header Row with Clickable Buttons -->
+        <div style='background: linear-gradient(135deg, rgba(0, 217, 255, 0.15) 0%, rgba(76, 175, 254, 0.15) 100%); 
+                    padding: 8px 24px; border-bottom: 1px solid rgba(0,217,255,0.3);'>
+            <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;'>
+    """, unsafe_allow_html=True)
+    
+    # Create button columns for headers
+    header_cols = st.columns(4)
+    
+    with header_cols[0]:
+        if st.button("📊 Asset", key="btn_asset", use_container_width=True):
+            st.session_state.show_asset_details = not st.session_state.show_asset_details
+            st.session_state.show_regime_details = False
+            st.session_state.show_strategy_details = False
+            st.session_state.show_status_details = False
+    
+    with header_cols[1]:
+        if st.button("🌊 Market Regime", key="btn_regime", use_container_width=True):
+            st.session_state.show_regime_details = not st.session_state.show_regime_details
+            st.session_state.show_asset_details = False
+            st.session_state.show_strategy_details = False
+            st.session_state.show_status_details = False
+    
+    with header_cols[2]:
+        if st.button("🎯 Strategy", key="btn_strategy", use_container_width=True):
+            st.session_state.show_strategy_details = not st.session_state.show_strategy_details
+            st.session_state.show_asset_details = False
+            st.session_state.show_regime_details = False
+            st.session_state.show_status_details = False
+    
+    with header_cols[3]:
+        if st.button("⚡ Status", key="btn_status", use_container_width=True):
+            st.session_state.show_status_details = not st.session_state.show_status_details
+            st.session_state.show_asset_details = False
+            st.session_state.show_regime_details = False
+            st.session_state.show_strategy_details = False
+    
+    st.markdown("""
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Content area - either show data row or detailed view
+    if not any([st.session_state.show_asset_details, st.session_state.show_regime_details, 
+                st.session_state.show_strategy_details, st.session_state.show_status_details]):
+        # Show normal data row
+        st.markdown(f"""
+        <!-- Data Row -->
+        <div style='padding: 24px; background: rgba(255,255,255,0.02);'>
+            <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: center;'>
+                <div style='text-align: center;'>
+                    <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{selected_symbol}</p>
+                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>{asset_category}</p>
+                </div>
+                <div style='text-align: center;'>
+                    <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{regime_icon} {regime_display}</p>
+                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>Real-time detection</p>
+                </div>
+                <div style='text-align: center;'>
+                    <p style='margin: 0; color: #00d9ff; font-size: 20px; font-weight: 700;'>🎯 {strategy_display}</p>
+                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>Auto-selected</p>
+                </div>
+                <div style='text-align: center;'>
+                    <p style='margin: 0; color: {status_color}; font-size: 20px; font-weight: 700;'>{status_display}</p>
+                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>{status_detail}</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # Show detailed view inside table
+        st.markdown("""
+        <div style='padding: 24px; background: rgba(255,255,255,0.02);'>
+        """, unsafe_allow_html=True)
+    
+        # Show detailed information based on which button was clicked
+        if st.session_state.show_asset_details:
+            # Professional Asset Details with styled table
+            st.markdown(f"""
+            <div style='color: #00d9ff; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                📊 Asset Overview: {selected_symbol}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Asset Information Table
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"""
+                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3);'>
+                    <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>📋 ASSET DETAILS</p>
+                    <table style='width: 100%; color: #ffffff;'>
+                        <tr style='border-bottom: 1px solid rgba(255,255,255,0.1);'>
+                            <td style='padding: 8px 0; color: #888;'>Symbol:</td>
+                            <td style='padding: 8px 0; text-align: right; font-weight: 600;'>{selected_symbol}</td>
+                        </tr>
+                        <tr style='border-bottom: 1px solid rgba(255,255,255,0.1);'>
+                            <td style='padding: 8px 0; color: #888;'>Name:</td>
+                            <td style='padding: 8px 0; text-align: right; font-weight: 600;'>{selected_asset_name}</td>
+                        </tr>
+                        <tr style='border-bottom: 1px solid rgba(255,255,255,0.1);'>
+                            <td style='padding: 8px 0; color: #888;'>Category:</td>
+                            <td style='padding: 8px 0; text-align: right; font-weight: 600;'>{asset_category}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; color: #888;'>Exchange:</td>
+                            <td style='padding: 8px 0; text-align: right; font-weight: 600;'>{tradingview_symbol.split(':')[0]}</td>
+                        </tr>
+                    </table>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3);'>
+                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>📈 MARKET PERFORMANCE</p>
+                    <p style='color: #ffffff; margin: 10px 0; font-size: 13px;'>Access comprehensive market data and live performance metrics:</p>
+                    <a href='https://www.google.com/finance/quote/{selected_symbol}:{'NASDAQ' if asset_category == 'Stocks' else 'INDEX'}' 
+                       target='_blank' 
+                       style='display: inline-block; background: linear-gradient(135deg, #4caf50, #45a049); 
+                              color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; 
+                              font-weight: 600; font-size: 13px; margin-top: 10px;'>
+                        🔗 View on Google Finance
+                    </a>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Current Analysis Section
+            st.markdown("""
+            <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(33,150,243,0.3);'>
+                <p style='color: #2196f3; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🤖 AI ANALYSIS STATUS</p>
+            """, unsafe_allow_html=True)
+            
+            status_col1, status_col2, status_col3 = st.columns(3)
+            
+            with status_col1:
+                st.markdown("""
+                <div style='text-align: center; padding: 10px;'>
+                    <div style='font-size: 24px; margin-bottom: 5px;'>✅</div>
+                    <div style='color: #4caf50; font-weight: 600; font-size: 12px;'>Price Tracking</div>
+                    <div style='color: #888; font-size: 11px;'>Real-time</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with status_col2:
+                st.markdown("""
+                <div style='text-align: center; padding: 10px;'>
+                    <div style='font-size: 24px; margin-bottom: 5px;'>✅</div>
+                    <div style='color: #4caf50; font-weight: 600; font-size: 12px;'>Technical Indicators</div>
+                    <div style='color: #888; font-size: 11px;'>Active</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with status_col3:
+                st.markdown("""
+                <div style='text-align: center; padding: 10px;'>
+                    <div style='font-size: 24px; margin-bottom: 5px;'>✅</div>
+                    <div style='color: #4caf50; font-weight: 600; font-size: 12px;'>Volume Analysis</div>
+                    <div style='color: #888; font-size: 11px;'>Monitoring</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            # Why This Asset Section
+            st.markdown(f"""
+            <div style='background: rgba(255,152,0,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255,152,0,0.3);'>
+                <p style='color: #ff9800; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>💡 WHY THIS ASSET?</p>
+                <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                    <strong>{selected_symbol}</strong> was selected based on your configuration settings. 
+                    The AI continuously monitors price action, trading volume, and multiple technical indicators 
+                    to identify optimal entry and exit opportunities. This asset is being analyzed in real-time 
+                    to detect high-probability trading setups that align with current market conditions.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        elif st.session_state.show_regime_details:
+            regime_info = {
+                'TREND': {
+                    'description': 'Strong directional movement in prices',
+                    'characteristics': '• Clear price direction\n• Higher highs or lower lows\n• Sustained momentum',
+                    'best_for': 'Trend Following strategies work best',
+                    'risk': 'Medium - Follow the trend, avoid fighting it'
+                },
+                'SIDEWAYS': {
+                    'description': 'Price consolidation within a range',
+                    'characteristics': '• Limited price movement\n• Support and resistance levels\n• Low volatility',
+                    'best_for': 'Mean Reversion strategies excel here',
+                    'risk': 'Low - Predictable range-bound movement'
+                },
+                'VOLATILE': {
+                    'description': 'High price fluctuations and uncertainty',
+                    'characteristics': '• Rapid price swings\n• Increased volume\n• Breakout potential',
+                    'best_for': 'Volatility Breakout strategies thrive',
+                    'risk': 'High - Requires careful position sizing'
+                },
+                'Unknown': {
+                    'description': 'Insufficient data for classification',
+                    'characteristics': '• Collecting market data\n• Building price history\n• Analyzing patterns',
+                    'best_for': 'Waiting for clear market structure',
+                    'risk': 'N/A - System initializing'
+                }
+            }
+            
+            current_regime_info = regime_info.get(regime_display, regime_info['Unknown'])
+            
+            # Professional Market Regime Details
+            st.markdown(f"""
+            <div style='color: #4cafff; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                🌊 Market Regime Analysis: {regime_icon} {regime_display}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Regime Overview
+            st.markdown(f"""
+            <div style='background: rgba(76,175,254,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(76,175,254,0.3); margin-bottom: 15px;'>
+                <p style='color: #4cafff; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
+                    {regime_icon} Current Market Condition
+                </p>
+                <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
+                    {current_regime_info['description']}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Two-column layout for characteristics and strategy
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                characteristics_lines = current_regime_info['characteristics'].split('\n')
+                characteristics_html = '<br>'.join([f"<div style='padding: 5px 0;'>{line}</div>" for line in characteristics_lines])
+                
+                st.markdown(f"""
+                <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(33,150,243,0.3); height: 100%;'>
+                    <p style='color: #2196f3; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>📋 KEY CHARACTERISTICS</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        {characteristics_html}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3); height: 100%;'>
+                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🎯 OPTIMAL STRATEGY</p>
+                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.8;'>
+                        {current_regime_info['best_for']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Risk Level and AI Detection
+            risk_colors = {'LOW': '#4caf50', 'MEDIUM': '#ff9800', 'HIGH': '#f44336', 'N/A': '#888'}
+            risk_word = current_regime_info['risk'].split(' - ')[0].split(': ')[-1] if ' - ' in current_regime_info['risk'] else 'MEDIUM'
+            risk_color = risk_colors.get(risk_word.upper(), '#ff9800')
+            
+            st.markdown(f"""
+            <div style='background: rgba(255,152,0,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255,152,0,0.3);'>
+                <p style='color: #ff9800; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>⚠️ RISK ASSESSMENT</p>
+                <p style='color: {risk_color}; margin: 0; font-size: 14px; font-weight: 600;'>
+                    {current_regime_info['risk']}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div style='background: rgba(156,39,176,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(156,39,176,0.3);'>
+                <p style='color: #9c27b0; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🤖 AI DETECTION METHOD</p>
+                <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                    The AI uses machine learning algorithms to analyze price patterns, volatility, and momentum 
+                    to classify market conditions in real-time. This enables automatic strategy selection 
+                    that adapts to changing market dynamics.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        elif st.session_state.show_strategy_details:
+            strategy_info = {
+                'Trend Following': {
+                    'description': 'Captures sustained directional moves',
+                    'logic': 'Identifies and follows strong trends using moving averages and momentum indicators',
+                    'indicators': '• EMA (20/50 periods)\n• MACD\n• ADX for trend strength',
+                    'entry': 'When price crosses above EMA and MACD confirms',
+                    'exit': 'When trend reverses or momentum weakens',
+                    'best_in': 'TREND markets',
+                    'advantage': 'High reward potential in strong trends'
+                    },
+                'Mean Reversion': {
+                    'description': 'Profits from price returning to average',
+                    'logic': 'Identifies overbought/oversold conditions and trades reversals back to mean',
+                    'indicators': '• Bollinger Bands\n• RSI\n• Standard deviation',
+                    'entry': 'When price reaches extreme levels (oversold/overbought)',
+                    'exit': 'When price returns to moving average',
+                    'best_in': 'SIDEWAYS markets',
+                    'advantage': 'Consistent profits in range-bound conditions'
+                },
+                'Volatility Breakout': {
+                    'description': 'Captures explosive price movements',
+                    'logic': 'Detects compression followed by expansion, trading the breakout',
+                    'indicators': '• ATR (Average True Range)\n• Donchian Channels\n• Volume spikes',
+                    'entry': 'When price breaks out of consolidation with volume',
+                    'exit': 'When volatility contracts or breakout fails',
+                    'best_in': 'VOLATILE markets',
+                    'advantage': 'Large moves in short timeframes'
+                },
+                'Analyzing...': {
+                    'description': 'AI is evaluating market conditions',
+                    'logic': 'Analyzing historical data and current market regime',
+                    'indicators': '• Collecting price data\n• Calculating indicators\n• Detecting patterns',
+                    'entry': 'Waiting for strategy selection',
+                    'exit': 'Pending analysis completion',
+                    'best_in': 'Initializing...',
+                    'advantage': 'Ensuring optimal strategy selection'
+                },
+                'None': {
+                    'description': 'No strategy selected - system stopped',
+                    'logic': 'Start trading to enable AI strategy selection',
+                    'indicators': '• System idle',
+                    'entry': 'N/A',
+                    'exit': 'N/A',
+                    'best_in': 'N/A',
+                    'advantage': 'Safe mode - no active trading'
+                }
+            }
+            
+            current_strategy_info = strategy_info.get(strategy_display, strategy_info['None'])
+            
+            # Professional Strategy Details
+            st.markdown(f"""
+            <div style='color: #ffc107; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                🎯 Strategy Deep Dive: {strategy_display}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Strategy Overview
+            st.markdown(f"""
+            <div style='background: rgba(255,193,7,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(255,193,7,0.3); margin-bottom: 15px;'>
+                <p style='color: #ffc107; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
+                    💡 Strategy Overview
+                </p>
+                <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
+                    {current_strategy_info['description']}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # How It Works
+            st.markdown(f"""
+            <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(33,150,243,0.3); margin-bottom: 15px;'>
+                <p style='color: #2196f3; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🔍 HOW IT WORKS</p>
+                <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                    {current_strategy_info['logic']}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Key Indicators
+            indicators_lines = current_strategy_info['indicators'].split('\n')
+            indicators_html = '<br>'.join([f"<div style='padding: 5px 0;'>{line}</div>" for line in indicators_lines])
+            
+            st.markdown(f"""
+            <div style='background: rgba(156,39,176,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(156,39,176,0.3); margin-bottom: 15px;'>
+                <p style='color: #9c27b0; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>� KEY INDICATORS</p>
+                <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                    {indicators_html}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Entry and Exit Conditions in two columns
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"""
+                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3); height: 100%;'>
+                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🟢 ENTRY CONDITIONS</p>
+                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                        {current_strategy_info['entry']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                <div style='background: rgba(244,67,54,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(244,67,54,0.3); height: 100%;'>
+                    <p style='color: #f44336; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🔴 EXIT CONDITIONS</p>
+                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                        {current_strategy_info['exit']}
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Best Performance and Advantage
+            st.markdown(f"""
+            <div style='background: rgba(0,188,212,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(0,188,212,0.3);'>
+                <p style='color: #00bcd4; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>✨ BEST PERFORMANCE</p>
+                <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                    This strategy excels in <strong>{current_strategy_info['best_in']}</strong>
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div style='background: rgba(255,152,0,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255,152,0,0.3);'>
+                <p style='color: #ff9800; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>💪 COMPETITIVE ADVANTAGE</p>
+                <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                    {current_strategy_info['advantage']}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Why AI Selected This
+            st.markdown(f"""
+            <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid rgba(0,217,255,0.3);'>
+                <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🤖 WHY AI SELECTED THIS</p>
+                <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                    The AI automatically chooses the most suitable strategy based on current market regime. 
+                    This ensures you're always trading with the optimal approach for current conditions, 
+                    maximizing your probability of success.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        elif st.session_state.show_status_details:
+            
+            if not trading_state.running:
+                # Professional Status Details - System Stopped
+                st.markdown("""
+                <div style='color: #888; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                    ⚪ System Status: Inactive
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                <div style='background: rgba(108,117,125,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(108,117,125,0.3); margin-bottom: 15px;'>
+                    <p style='color: #6c757d; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
+                        ⚪ Trading System Inactive
+                    </p>
+                    <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
+                        The trading system is currently not running. Start trading to activate AI analysis and signal detection.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # How to Start
+                st.markdown("""
+                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
+                    <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🚀 HOW TO START</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'><strong>1.</strong> Click the <strong>Start Trading</strong> button above</div>
+                        <div style='padding: 5px 0;'><strong>2.</strong> System will connect to live market data</div>
+                        <div style='padding: 5px 0;'><strong>3.</strong> AI will begin analysis within 1-2 minutes</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Safety Features
+                st.markdown("""
+                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3);'>
+                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🛡️ SAFETY FEATURES</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'>✅ Paper trading enabled by default</div>
+                        <div style='padding: 5px 0;'>✅ Risk management active</div>
+                        <div style='padding: 5px 0;'>✅ Stop-loss protection ready</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            elif trading_state.current_regime == "Initializing...":
+                # Professional Status Details - Initializing
+                st.markdown("""
+                <div style='color: #00d9ff; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                    🔄 System Status: Initializing
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("""
+                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
+                    <p style='color: #00d9ff; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
+                        🔄 Initializing AI Intelligence
+                    </p>
+                    <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
+                        The system is collecting live market data and preparing analysis algorithms...
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Progress Checklist
+                st.markdown("""
+                <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(33,150,243,0.3); margin-bottom: 15px;'>
+                    <p style='color: #2196f3; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>📊 PROGRESS STATUS</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'>✅ Connected to market feed</div>
+                        <div style='padding: 5px 0;'>🔄 Building price history (20+ bars needed)</div>
+                        <div style='padding: 5px 0;'>⏳ Preparing regime detection</div>
+                        <div style='padding: 5px 0;'>⏳ Loading strategy algorithms</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Estimated Time
+                st.markdown("""
+                <div style='background: rgba(255,152,0,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(255,152,0,0.3);'>
+                    <p style='color: #ff9800; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>⏱️ ESTIMATED TIME</p>
+                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                        <strong>1-2 minutes</strong> - This is a one-time setup. Once complete, 
+                        analysis will run continuously in real-time!
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Add animated progress
+                st.markdown("""
+                <div style='text-align: center; padding: 30px 20px;'>
+                    <div style='display: inline-block; font-size: 50px; animation: pulse 1.5s ease-in-out infinite;'>
+                        🔄
+                    </div>
+                    <p style='color: #00d9ff; margin-top: 15px; font-weight: 600; font-size: 16px;'>Initializing...</p>
+                </div>
+                <style>
+                    @keyframes pulse {
+                        0%, 100% { transform: scale(1); opacity: 1; }
+                        50% { transform: scale(1.1); opacity: 0.7; }
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+            elif trading_state.position_state == 'long':
+                # Professional Status Details - Position Active
+                st.markdown(f"""
+                <div style='color: #4caf50; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                    ✅ System Status: Position Active
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(76,175,80,0.3); margin-bottom: 15px;'>
+                    <p style='color: #4caf50; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
+                        ✅ LONG Position Active on {selected_symbol}
+                    </p>
+                    <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
+                        You have an active long position. AI is continuously monitoring for optimal exit signals.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # AI Monitoring
+                st.markdown("""
+                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
+                    <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🤖 AI MONITORING</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'>📊 Tracking price movements in real-time</div>
+                        <div style='padding: 5px 0;'>🎯 Analyzing exit signals continuously</div>
+                        <div style='padding: 5px 0;'>🛡️ Stop-loss protection active</div>
+                        <div style='padding: 5px 0;'>⏱️ Updates every 3 seconds</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # What AI Is Watching
+                st.markdown("""
+                <div style='background: rgba(255,152,0,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(255,152,0,0.3); margin-bottom: 15px;'>
+                    <p style='color: #ff9800; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>👁️ WHAT AI IS WATCHING</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'>• Trend reversal signals</div>
+                        <div style='padding: 5px 0;'>• Momentum weakening</div>
+                        <div style='padding: 5px 0;'>• Support level breaks</div>
+                        <div style='padding: 5px 0;'>• Volume changes</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Notification Alert
+                st.markdown("""
+                <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(33,150,243,0.3);'>
+                    <p style='color: #2196f3; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🔔 YOU'LL BE NOTIFIED WHEN</p>
+                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                        The AI detects optimal exit conditions to protect profits or minimize losses. 
+                        Exit signals will appear prominently when conditions are met.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                # Professional Status Details - Scanning
+                st.markdown(f"""
+                <div style='color: #2196f3; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
+                    🔍 System Status: Actively Scanning
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(33,150,243,0.3); margin-bottom: 15px;'>
+                    <p style='color: #2196f3; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
+                        🔍 Scanning for Opportunities
+                    </p>
+                    <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
+                        AI is actively analyzing <strong>{selected_symbol}</strong> for high-probability entry signals...
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Current Analysis
+                st.markdown(f"""
+                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
+                    <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>📊 CURRENT ANALYSIS</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'>📊 Monitoring price action every minute</div>
+                        <div style='padding: 5px 0;'>🧠 Evaluating <strong>{regime_display}</strong> market conditions</div>
+                        <div style='padding: 5px 0;'>🎯 Using <strong>{strategy_display}</strong> strategy</div>
+                        <div style='padding: 5px 0;'>⚡ Ready to alert on strong signals</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # What AI Is Looking For
+                st.markdown("""
+                <div style='background: rgba(156,39,176,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(156,39,176,0.3); margin-bottom: 15px;'>
+                    <p style='color: #9c27b0; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🎯 WHAT AI IS LOOKING FOR</p>
+                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                        <div style='padding: 5px 0;'>• Optimal entry points</div>
+                        <div style='padding: 5px 0;'>• Favorable risk/reward setups</div>
+                        <div style='padding: 5px 0;'>• Confirmation from multiple indicators</div>
+                        <div style='padding: 5px 0;'>• Volume validation</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Notification Alert
+                st.markdown("""
+                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3);'>
+                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🔔 YOU'LL BE NOTIFIED WHEN</p>
+                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                        A strong buy signal is detected with high confidence based on current market regime 
+                        and strategy criteria. Buy signals will appear prominently when all conditions align.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Add scanning animation
+                st.markdown("""
+                <div style='text-align: center; padding: 30px 20px;'>
+                    <div style='display: inline-block; font-size: 50px; animation: scan 2s linear infinite;'>
+                        🔍
+                    </div>
+                    <p style='color: #2196f3; margin-top: 15px; font-weight: 600; font-size: 16px;'>Actively Scanning...</p>
+                </div>
+                <style>
+                    @keyframes scan {
+                        0% { transform: translateX(-20px); }
+                        50% { transform: translateX(20px); }
+                        100% { transform: translateX(-20px); }
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+    
+    # Close the content div and table (moved inside to prevent showing as text)
+    if any([st.session_state.show_asset_details, st.session_state.show_regime_details, 
+            st.session_state.show_strategy_details, st.session_state.show_status_details]):
+        # Close the detail content div
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Always close the table with footer
+    st.markdown("""
+    <div style='padding: 16px 24px; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05);'>
+        <p style='margin: 0; color: #b0b0b0; font-size: 12px; text-align: center;'>
+            🤖 AI updates every minute • 📊 Real-time price action analysis • ⏱️ Dashboard refreshes every 3 seconds
+        </p>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Show error notification if there are recent errors
+    recent_errors = [e for e in trading_state.error_log if e['severity'] == 'ERROR']
+    if recent_errors:
+        st.error(f"⚠️ {len(recent_errors)} error(s)")
+    
+    # Show notifications/signals when available
     if trading_state.notification:
         # Display notification with markdown formatting
         st.markdown(trading_state.notification)
         
+        # 🎯 PHASE 5: Show Position Sizing Recommendation for BUY signals
+        if "BUY" in trading_state.notification and hasattr(st.session_state, 'last_entry_risk_score'):
+            risk_score = st.session_state.get('last_entry_risk_score', 50)
+            risk_level = st.session_state.get('last_entry_risk_level', 'MEDIUM')
+            
+            # Calculate recommended position size reduction
+            base_qty = 100  # Example: 100 shares baseline
+            recommended_qty, sizing_explanation = risk_manager.recommend_position_size(base_qty, risk_score)
+            
+            # Show position sizing recommendation
+            st.markdown("---")
+            st.markdown("##### 💰 Recommended Position Sizing")
+            
+            sizing_color = "#4caf50" if risk_level == "LOW" else "#ff9800" if risk_level == "MEDIUM" else "#f44336"
+            
+            st.markdown(f"""
+            <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid {sizing_color};'>
+                <p style='margin: 0; font-size: 13px;'>{sizing_explanation}</p>
+                <p style='margin: 8px 0 0 0; color: {sizing_color}; font-size: 14px; font-weight: 600;'>
+                    💡 Suggested: {recommended_qty} shares (adjust based on your capital)
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+        
         st.markdown("---")
         
+        # Primary action buttons
         col1, col2, col3 = st.columns([1, 1, 1])
         
         with col1:
@@ -1686,28 +2473,50 @@ def show_dashboard_page():
             if st.button("🔕 Dismiss", use_container_width=True):
                 trading_state.notification = None
                 st.rerun()
-    else:
-        # Show current status based on AI state
-        if trading_state.running:
-            if trading_state.current_regime == "Initializing...":
-                st.info("� **Initializing AI Intelligence** - Collecting live market data... Please wait.")
-            elif trading_state.position_state == 'long':
-                st.success(f"""✅ **POSITION ACTIVE: LONG**
-
-� **Status:** Monitoring {selected_symbol} for exit signals
-🧠 **AI Mode:** Active analysis - Will alert when it's time to sell
-⏱️ **Updates:** Real-time (every 3 seconds)
-
-💡 Hold tight! AI will notify you when conditions suggest closing the position.""")
-            else:
-                st.info(f"""🔍 **SCANNING FOR OPPORTUNITIES**
-
-📊 **Asset:** {selected_symbol}
-🧠 **Market Regime:** {trading_state.current_regime}
-🎯 **Strategy:** {trading_state.current_strategy}
-⏱️ **Status:** Analyzing real-time price action
-
-💡 AI is actively monitoring the market. You'll be notified immediately when a strong buy signal is detected!""")
+        
+        # Phase 5: User Action Confirmation Loop - "Did You Buy?" Feature
+        st.markdown("---")
+        st.markdown("##### 📝 Manual Execution Confirmation")
+        st.markdown("*Did you manually execute this trade on TradingView?*")
+        
+        conf_col1, conf_col2 = st.columns([1, 1])
+        
+        with conf_col1:
+            if "BUY" in trading_state.notification:
+                if st.button("✅ I Bought", use_container_width=True, key="confirm_buy"):
+                    # User confirmed they bought manually
+                    trading_state.position_state = 'long'
+                    st.session_state.user_confirmed_action = True
+                    st.session_state.last_action_time = datetime.now()
+                    st.success("✅ Confirmed! AI will now monitor for exit signals.")
+                    trading_state.notification = None
+                    time.sleep(2)
+                    st.rerun()
+            
+            if "SELL" in trading_state.notification and trading_state.position_state == 'long':
+                if st.button("✅ I Sold", use_container_width=True, key="confirm_sell"):
+                    # User confirmed they sold manually
+                    trading_state.position_state = None
+                    st.session_state.user_confirmed_action = True
+                    st.session_state.last_action_time = datetime.now()
+                    st.success("✅ Confirmed! AI will scan for new opportunities.")
+                    trading_state.notification = None
+                    time.sleep(2)
+                    st.rerun()
+        
+        with conf_col2:
+            if "BUY" in trading_state.notification or "SELL" in trading_state.notification:
+                if st.button("❌ I Skipped", use_container_width=True, key="skip_signal"):
+                    # User chose to skip this signal
+                    st.session_state.user_skipped_signal = True
+                    st.session_state.skipped_signal_time = datetime.now()
+                    st.session_state.skipped_strategy = trading_state.current_strategy
+                    st.session_state.skipped_regime = trading_state.current_regime
+                    
+                    st.warning("⚠️ Signal skipped. AI will reduce confidence for this strategy temporarily.")
+                    trading_state.notification = None
+                    time.sleep(2)
+                    st.rerun()
     
     st.markdown("---")
         

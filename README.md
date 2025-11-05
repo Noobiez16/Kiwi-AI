@@ -68,11 +68,59 @@ The app includes a **visual settings manager** - configure everything through th
 - **Risk Management** - Built-in safety features
 - **Paper Trading** - Test with fake money first (default enabled)
 
-## 🏁 Current Status: v2.2.1 Complete ✅
+## 🏁 Current Status: v2.4.0 Complete ✅
 
-**Latest Update:** November 5, 2025 - Enhanced UX & Faster AI Initialization!
+**Latest Update:** November 6, 2025 - Interactive AI Intelligence Table!
 
 📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)** | 🚀 **[Deployment Guide](DEPLOYMENT.md)**
+
+### ✨ v2.4.0 Features - Interactive AI Intelligence Table 🆕
+
+#### 📊 Interactive Table with Professional Design
+- **Clickable Column Headers** - Asset, Market Regime, Strategy, Status
+- **Detailed Information Views** - Click any header to see comprehensive details
+- **Professional Card Layouts** - Glass morphism design with color coding
+- **Smart Toggling** - Auto-closes other views, stays within table
+- **Educational Context** - Learn about each component on-demand
+
+#### 🎨 Professional Card-Based Views
+- **Asset Details** - Category, market performance, AI analysis status
+- **Market Regime Analysis** - Current regime, characteristics, risk assessment
+- **Strategy Deep Dive** - How it works, entry/exit conditions, why AI selected it
+- **Status Information** - 4 dynamic states (Stopped, Initializing, Active, Scanning)
+
+#### ⚡ Enhanced User Experience
+- **Animated Status Indicators** - Pulse (Initializing), Scan (Searching)
+- **Color-Coded Sections** - Blue (Asset), Purple (Regime), Orange (Strategy)
+- **Responsive Layouts** - Multi-column cards with proper spacing
+- **Glass Morphism Effects** - Semi-transparent cards with backdrop blur
+
+### ✨ v2.3.0 Features - AI Learning & Risk Management
+
+#### 🧠 Intelligent User Interaction
+- **AI Learning Loop** - AI learns from your trading decisions
+- **User Action Confirmation** - "I Bought" / "I Skipped" buttons
+- **Adaptive Confidence** - Suppresses similar signals when you skip (15-min cooldown)
+- **Smart Context Awareness** - Only suppresses same strategy + regime combination
+- **Clear Feedback** - Shows why signals are suppressed
+
+#### 🛡️ Advanced Risk Assessment
+- **Entry Risk Score (0-100)** - Multi-factor risk analysis for every BUY signal
+- **Risk Levels** - LOW 🟢 / MEDIUM 🟡 / HIGH 🟠 / CRITICAL 🔴
+- **Critical Risk Warnings** - Prominent alerts when risk exceeds 75/100
+- **Risk Factor Breakdown:**
+  - Stop Loss Distance (40% weight)
+  - ATR-Adjusted Volatility (30% weight)
+  - Market Volatility Context (30% weight)
+
+#### 💰 Dynamic Position Sizing
+- **Risk-Based Recommendations** - Automatic position reduction based on risk
+- **Smart Scaling:**
+  - LOW Risk: 100% position
+  - MEDIUM Risk: 75% position (25% reduction)
+  - HIGH Risk: 50% position (50% reduction)
+  - CRITICAL Risk: 25% position (75% reduction)
+- **Visual Display** - Clear position sizing guidance in recommendations
 
 ### ✨ v2.0 Features - TradingView & Multi-Asset 🆕
 
@@ -493,29 +541,34 @@ INITIAL_CAPITAL="100000"
 
 ## 📊 Project Status
 
-**Current Version:** 2.2.1 🆕  
-**Latest Update:** November 5, 2025 - Enhanced UX & Faster AI Initialization  
+**Current Version:** 2.4.0 🆕  
+**Latest Update:** November 6, 2025 - Interactive AI Intelligence Table  
 **Phase 1 Completion:** October 17, 2025  
 **Phase 2 Completion:** October 18, 2025  
 **Phase 3 Completion:** October 18, 2025  
 **Phase 4 Completion:** October 19, 2025  
-**Phase 5 Completion:** October 20, 2025 (Consolidation & UI Upgrade)  
+**Phase 5 Completion:** November 6, 2025 (Intelligent Interaction & Assisted Accuracy)  
 **v2.0 Release:** November 2, 2025 (TradingView & Multi-Asset)  
 **v2.1 Release:** November 3, 2025 (Chart Optimization & WebSocket Stability)  
 **v2.2 Release:** November 5, 2025 (AI Intelligence & Real-Time Recommendations)  
 **v2.2.1 Release:** November 5, 2025 (Enhanced UX & Faster AI Initialization)  
-**Total Lines of Code:** 9,500+  
+**v2.3.0 Release:** November 6, 2025 (AI Learning Loop & Risk Management)  
+**v2.4.0 Release:** November 6, 2025 (Interactive AI Intelligence Table)  
+**Total Lines of Code:** 10,800+  
 **Test Coverage:** 100% for all phases  
 **Strategies Implemented:** 3  
 **AI Components:** 3 (Regime Detector, Performance Monitor, Strategy Selector)  
-**Execution Modules:** 2 (Broker Interface, Risk Manager)  
-**Main Application:** `run_kiwi.py` (All-in-one web dashboard)  
+**Execution Modules:** 2 (Broker Interface with Risk Assessment, Risk Manager with Entry Analysis)  
+**Main Application:** `run_kiwi.py` (All-in-one web dashboard with interactive table)  
 **Trading Modes:** Real-Time Only (Auto-Start WebSocket streaming)  
 **Charts:** Professional TradingView integration - Full-width, optimized display  
 **Supported Assets:** 27 instruments across 5 categories (Stocks, Forex, Crypto, Indices, Commodities)  
-**UI:** Professional liquid-style dashboard with glass morphism  
+**UI:** Professional liquid-style dashboard with glass morphism + interactive AI Intelligence table  
 **Connection Management:** Advanced WebSocket handling with retry logic  
-**Status:** ✅ Production Ready - Stable Multi-Asset Trading with Optimized Charts
+**Risk Features:** Entry Risk Score (0-100), Dynamic Position Sizing, Critical Warnings  
+**AI Learning:** User feedback loop with signal suppression (15-min cooldown)  
+**Interactive Table:** Clickable headers with professional card-based detail views  
+**Status:** ✅ Production Ready - Intelligent Trading with Interactive AI Intelligence & Risk Management
 
 ## 🤝 Contributing
 
