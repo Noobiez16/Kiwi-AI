@@ -17,6 +17,359 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.2] - 2025-11-10 - **COMPLETE VISUAL CLEANUP** ✨🧹
+
+### 🎨 UI/UX Improvements
+
+#### Complete Separator Removal
+Removed all horizontal separator lines (`st.markdown("---")`) across the entire application for a cleaner, more minimalist Apple-style design. The interface now flows naturally with proper spacing maintained through CSS margins.
+
+**Separators Removed by Section:**
+
+**Dashboard Page (8 separators):**
+- After Professional Asset Selector section
+- Before Live Status Bar section
+- Before TradingView Chart section
+- Before AI Intelligence & Analysis section
+- Before error notifications display
+- After Position Sizing Recommendation
+- After signal action buttons
+- In Live Updates Active container
+
+**Settings Page (5 separators):**
+- After page title "⚙️ Settings"
+- Between API Configuration and Trading Parameters sections
+- Between Trading Parameters and Asset Selection sections
+- Before Trading Intervals section
+- Before Save Settings buttons
+
+**Error Log Page (7 separators):**
+- After page title "🐛 Error & Debug Log"
+- Between control buttons and filter options
+- Before "Display errors" section
+- Between Exception and Context displays (3 locations)
+- Before error statistics section
+- Before Recent Error Timeline
+
+**Help Page (9 separators):**
+- After page title "📖 Help & Documentation"
+- Between Quick Start and What's New sections
+- After Multi-Asset Trading section
+- After Safety Features section
+- After Configuration section
+- After Strategies section
+- After Important Notes section
+- After Troubleshooting section
+- Before Resources section
+
+**Control Page (2 separators):**
+- After Real-Time Trading System introduction
+- Before Current Configuration section
+
+**Sidebar (1 separator):**
+- Between logo and navigation menu
+
+**Total: 32 separators removed**
+
+### 🎯 Visual Design Benefits
+
+**Enhanced User Experience:**
+- ✅ **Cleaner Interface** - No visual clutter from horizontal lines
+- ✅ **Better Flow** - Content flows naturally without interruptions
+- ✅ **Modern Aesthetic** - Apple-style minimalist design throughout
+- ✅ **Improved Focus** - Less visual distraction, better content emphasis
+- ✅ **Professional Look** - Institutional-grade clean interface
+- ✅ **Consistent Spacing** - Natural gaps maintained with CSS margins
+
+**Design Philosophy:**
+- Minimalist approach with no unnecessary dividers
+- Content sectioned by natural spacing and typography
+- Glass morphism cards provide visual separation
+- Section headers create clear content boundaries
+- Smooth transitions between interface elements
+
+### 🔧 Technical Implementation
+
+**CSS Margin Spacing:**
+```python
+# Added margin-top where needed for natural spacing
+<div style='...margin-top: 20px;'>
+```
+
+**Clean Section Transitions:**
+- Sections separated by whitespace and headers
+- Cards and containers provide visual boundaries
+- Typography hierarchy creates clear structure
+- No reliance on horizontal divider lines
+
+### 📝 Files Updated
+- `run_kiwi.py` - Removed 32 separator lines across all pages and sections
+  - Dashboard page cleanup (8 locations)
+  - Settings page cleanup (5 locations)
+  - Error Log page cleanup (7 locations)
+  - Help page cleanup (9 locations)
+  - Control page cleanup (2 locations)
+  - Sidebar cleanup (1 location)
+
+---
+
+## [2.5.1] - 2025-11-09 - **ANIMATED STATUS SWITCHER** 📊
+
+### 🎨 UI/UX Improvements
+
+#### Animated Status Switcher with State Management
+The Status section now intelligently displays different content based on the current trading state, providing a cleaner and more focused user experience:
+
+**State-Based Display:**
+1. **Inactive State** (Before "Start Trading")
+   - Shows "System Status: Inactive" 
+   - Displays how to start trading
+   - Lists safety features
+   
+2. **Initializing State** (Just after "Start Trading")
+   - Shows "System Status: Initializing"
+   - Displays static information about current asset
+   - Shows progress checklist (connecting, building history, preparing algorithms)
+   - Animated pulse icon (🔄)
+   - Estimated time: 1-2 minutes
+   
+3. **Active Scanning State** (After initialization complete)
+   - Shows "System Status: Actively Scanning"
+   - **Animated Status Switcher activates automatically**
+   - Cycles through 6 status items every 10 seconds
+
+**How the Animated Switcher Works:**
+- Displays **one status at a time** in a large, clean card
+- **Automatically switches** every 10 seconds to the next status
+- Shows **6 status items** in rotation:
+  1. 🔍 **Scanning Status** - Current scanning activity
+  2. 📊 **Monitoring** - Update frequency details
+  3. 🧠 **Market Regime** - Detected market conditions
+  4. 🎯 **Active Strategy** - Strategy in use
+  5. 🎯 **Looking For** - Signal criteria being watched
+  6. 🔔 **Alert Status** - Notification readiness
+
+**Visual Design:**
+- **Uniform Blue Color Scheme** - Clean, professional single-color design
+- **Large Icon Display** - Prominent emoji icon for each status (32px)
+- **Centered Layout** - All content centered for better focus
+- **Smooth Fade-In Animation** - 0.5s fade and slide animation on switch
+- **Progress Indicators** - 6 dots at bottom showing current position in cycle
+- **Gradient Background** - Blue-cyan gradient container
+- **Glass Morphism** - Subtle transparency with shadow effects
+
+**Benefits:**
+- ✅ **Cleaner Interface** - Shows one thing at a time, less visual clutter
+- ✅ **Better Focus** - User attention on single piece of information
+- ✅ **Automatic Updates** - No user interaction needed, auto-cycles
+- ✅ **Professional Animation** - Smooth transitions between states
+- ✅ **Space Efficient** - Takes less screen space than 6 separate cards
+- ✅ **Easy to Track** - Progress dots show position in cycle
+- ✅ **Intelligent State Management** - Different views for different trading phases
+- ✅ **Seamless Transition** - Automatically switches from static to animated view
+
+**Technical Details:**
+- Cycle time: 10 seconds per status item
+- Total cycle duration: 60 seconds (6 items × 10 seconds)
+- Animation: CSS fadeIn with translateY transform
+- Timing: Based on `time.time()` for consistent cycling
+- Synchronized: Works with Streamlit's 3-second auto-refresh
+- State detection: Uses `trading_state.running` and `trading_state.current_regime`
+
+---
+
+---
+
+## [2.5.0] - 2025-11-09 - **AI 5-MINUTE MARKET ANALYSIS** 🧠📊
+
+### 🎉 Major New Features
+**Real-Time AI Market Analysis with 5-Minute Updates**
+
+This release adds intelligent 5-minute market analysis in the Status section, providing continuous AI-powered insights on price movements, trends, and buy/sell recommendations.
+
+### 🧠 AI 5-Minute Analysis System
+
+#### Real-Time Market Insights
+When system is actively scanning, AI now provides:
+- **Price Movement Analysis** - Tracks price changes over last 5 minutes
+- **Trend Direction** - Identifies upward (📈), downward (📉), or sideways (➡️) movements
+- **Volume Trend Analysis** - Monitors if volume is increasing or decreasing
+- **Current Price Display** - Shows latest price with percentage change
+
+#### Intelligent Signal Assessment
+AI evaluates market conditions and provides one of four assessments:
+
+**1. ✅ BULLISH SIGNAL (Green)**
+- Triggered when: Price rising >0.5% in TREND market
+- Volume: Increasing, confirming momentum
+- Recommendation: "This could be a good opportunity to BUY"
+- Use case: Aligns with Trend Following strategy
+
+**2. ⚠️ CAUTION (Orange)**
+- Triggered when: Price rising but market regime doesn't support it
+- Example: Price up in SIDEWAYS or VOLATILE market
+- Recommendation: "Wait for better setup - reversals likely"
+- Use case: Prevents false entries in wrong conditions
+
+**3. ✅ POTENTIAL OPPORTUNITY (Green)**
+- Triggered when: Price drops in SIDEWAYS market with Mean Reversion
+- Strategy: Looking for bounce near support levels
+- Recommendation: "Monitor for bounce signals"
+- Use case: Mean reversion entry opportunity
+
+**4. 🛑 BEARISH SIGNAL (Red)**
+- Triggered when: Price falling >0.5% with unfavorable conditions
+- Volume: Often decreasing
+- Recommendation: "NOT a good time to BUY - wait for stabilization"
+- Use case: Prevents buying into falling prices
+
+**5. ⏸️ NEUTRAL (Gray)**
+- Triggered when: Price movement <0.5% in either direction
+- Market: Consolidating, no clear direction
+- Recommendation: "No clear signal yet - waiting for decisive action"
+- Use case: Prevents overtrading in quiet markets
+
+### 📊 Analysis Components
+
+#### Price Movement Card
+```
+🧠 AI 5-MINUTE ANALYSIS
+├── Price Movement: 📈 Upward (+1.2%)
+├── Current Price: $485.75
+├── Volume Trend: Increasing
+└── Signal: ✅ BULLISH SIGNAL
+```
+
+#### AI Reasoning Display
+Each analysis includes detailed reasoning:
+- Why the signal was generated
+- How it aligns with current market regime
+- Strategy compatibility check
+- Volume confirmation details
+- Risk factors to consider
+
+#### AI Recommendation Box
+Clear, actionable recommendations:
+- "This could be a good opportunity to BUY"
+- "NOT a good time to BUY - wait for stabilization"
+- "Monitor for bounce signals near support"
+- "Wait for better setup - reversals likely"
+- "No clear signal yet - waiting for decisive action"
+
+### 🎨 Visual Design
+
+#### Color-Coded Analysis Cards
+- **Bullish (Green)**: Background rgba(76,175,80,0.1), Border rgba(76,175,80,0.3)
+- **Bearish (Red)**: Background rgba(244,67,54,0.1), Border rgba(244,67,54,0.3)
+- **Caution (Orange)**: Background rgba(255,152,0,0.1), Border rgba(255,152,0,0.3)
+- **Neutral (Gray)**: Background rgba(136,136,136,0.1), Border rgba(136,136,136,0.3)
+
+#### Professional Layout
+- Glass morphism cards with backdrop blur
+- Gradient borders matching signal type
+- Clear typography and spacing
+- Dark background reasoning boxes for emphasis
+- Emoji indicators for quick visual scanning
+
+### 🔧 Technical Implementation
+
+#### Data Requirements
+- Minimum 5 bars in bar_history for analysis
+- Uses last 5 1-minute bars for 5-minute window
+- Calculates price change: `((last_price - first_price) / first_price) * 100`
+- Volume trend: `latest_volume vs average_volume`
+
+#### Signal Logic
+```python
+# Bullish conditions
+if price_change > 0.5% AND regime == "TREND":
+    signal = "BULLISH" + volume_confirmation
+
+# Bearish conditions  
+if price_change < -0.5% AND unfavorable_conditions:
+    signal = "BEARISH" + warning
+
+# Mean reversion opportunity
+if price_change < -0.5% AND regime == "SIDEWAYS" AND strategy == "Mean Reversion":
+    signal = "POTENTIAL OPPORTUNITY"
+
+# Caution
+if price_change > 0.5% BUT regime != "TREND":
+    signal = "CAUTION" + reversal_warning
+
+# Neutral
+if abs(price_change) < 0.5%:
+    signal = "NEUTRAL" + wait_message
+```
+
+#### Update Frequency
+- Analysis updates every 3 seconds (matches dashboard refresh)
+- Always uses most recent 5 bars available
+- Continuously re-evaluates as new bars arrive
+- No caching - always fresh analysis
+
+### 📈 User Experience
+
+#### Before
+```
+🔍 Scanning for Opportunities
+- No real-time analysis
+- No price movement insights
+- No buy/sell guidance
+- Static waiting message
+```
+
+#### After
+```
+🔍 Scanning for Opportunities
++ 🧠 AI 5-MINUTE ANALYSIS
+  ├── 📈 Price Movement: Upward (+1.2%)
+  ├── Current Price: $485.75
+  ├── Volume: Increasing
+  └── ✅ BULLISH SIGNAL
++ 🎯 AI RECOMMENDATION
+  └── "This could be a good opportunity to BUY..."
+```
+
+### 🎯 Benefits
+
+#### For Users
+- **Transparency** - See what AI is analyzing in real-time
+- **Education** - Learn why certain conditions favor buying/selling
+- **Confidence** - Make informed decisions with AI reasoning
+- **Timing** - Understand when to enter vs when to wait
+- **Risk Awareness** - Clear warnings when conditions are unfavorable
+
+#### For Trading
+- **Better Entries** - Wait for optimal conditions instead of random entries
+- **Risk Management** - Avoid buying into falling prices or false signals
+- **Strategy Alignment** - Ensures trades match current market regime
+- **Volume Confirmation** - Uses volume as additional signal validation
+- **Continuous Learning** - Users learn market dynamics through AI explanations
+
+### 📍 Location
+The AI 5-Minute Analysis appears in:
+- **Dashboard Tab** → AI Intelligence table → Click "⚙️ Status" button
+- **Condition**: Only shows when system is "Actively Scanning" (not in position)
+- **Requirement**: Minimum 5 bars of data collected
+
+### 🔄 Integration
+- Seamlessly integrated into existing Status details view
+- Uses same session state data (bar_history)
+- No new dependencies required
+- Compatible with all trading strategies
+- Works with all 27 supported assets
+
+### 📝 Files Updated
+- `run_kiwi.py` - Added AI 5-minute analysis feature (lines 2355-2432)
+  - Price movement calculation
+  - Volume trend analysis
+  - Signal assessment logic
+  - Recommendation generation
+  - Professional card displays
+
+---
+
 ## [2.4.0] - 2025-11-06 - **INTERACTIVE AI INTELLIGENCE TABLE** 🎯📊
 
 ### 🎉 Major New Features

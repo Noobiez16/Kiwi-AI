@@ -68,13 +68,67 @@ The app includes a **visual settings manager** - configure everything through th
 - **Risk Management** - Built-in safety features
 - **Paper Trading** - Test with fake money first (default enabled)
 
-## 🏁 Current Status: v2.4.0 Complete ✅
+## 🏁 Current Status: v2.5.2 Complete ✅
 
-**Latest Update:** November 6, 2025 - Interactive AI Intelligence Table!
+**Latest Update:** November 10, 2025 - Complete Visual Cleanup!
 
 📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)** | 🚀 **[Deployment Guide](DEPLOYMENT.md)**
 
-### ✨ v2.4.0 Features - Interactive AI Intelligence Table 🆕
+### ✨ v2.5.2 Features - Complete Visual Cleanup 🆕
+
+#### ✨ Minimalist Apple-Style Design
+- **Zero Separator Lines** - Removed all 32 horizontal dividers across entire application
+- **Natural Flow** - Content sections separated by spacing and typography
+- **Cleaner Interface** - No visual clutter from divider lines
+- **Modern Aesthetic** - Professional minimalist design throughout
+- **Better Focus** - Less visual distraction, improved content emphasis
+- **CSS Spacing** - Natural gaps maintained with proper margins
+
+**Cleanup Coverage:**
+- Dashboard Page: 8 separators removed
+- Settings Page: 5 separators removed
+- Error Log Page: 7 separators removed
+- Help Page: 9 separators removed
+- Control Page: 2 separators removed
+- Sidebar: 1 separator removed
+
+### ✨ v2.5.1 Features - Animated Status Switcher
+
+#### 🎬 Clean Animated Status Display
+- **Dynamic State Management** - Shows different content based on trading state
+- **Before Trading**: Static initialization view with progress checklist
+- **After Trading Starts**: Animated status switcher activates automatically
+- **10-Second Auto-Switch** - Automatically cycles through 6 status items every 10 seconds
+- **Single Focus Display** - Shows one status at a time for better clarity
+- **Uniform Blue Theme** - Clean, professional single-color design
+- **Smooth Animations** - Fade-in effect with slide transition (0.5s)
+- **Progress Indicators** - 6 dots showing current position in 60-second cycle
+- **6 Status Items** - Scanning Status, Monitoring, Market Regime, Active Strategy, Looking For, Alert Status
+- **Seamless Transition** - Automatically switches from initialization to scanning view when ready
+
+### ✨ v2.5.0 Features - AI 5-Minute Market Analysis
+
+#### 🧠 Real-Time AI Analysis Every 5 Minutes
+- **Price Movement Tracking** - Monitors price changes over last 5 minutes
+- **Trend Detection** - Identifies upward (📈), downward (📉), or sideways (➡️) movements
+- **Volume Analysis** - Tracks if volume is increasing or decreasing
+- **Intelligent Signal Assessment** - 5 signal types (Bullish, Bearish, Caution, Opportunity, Neutral)
+
+#### 🎯 Smart Buy/Sell Recommendations
+- **Bullish Signals** - "This could be a good opportunity to BUY"
+- **Bearish Warnings** - "NOT a good time to BUY - wait for stabilization"
+- **Caution Alerts** - "Wait for better setup - reversals likely"
+- **Mean Reversion Opportunities** - "Monitor for bounce signals"
+- **Neutral Guidance** - "No clear signal yet - waiting for decisive action"
+
+#### 📊 Detailed AI Reasoning
+- Explains why signal was generated
+- Shows how it aligns with current market regime
+- Validates strategy compatibility
+- Includes volume confirmation details
+- Highlights risk factors to consider
+
+### ✨ v2.4.0 Features - Interactive AI Intelligence Table
 
 #### 📊 Interactive Table with Professional Design
 - **Clickable Column Headers** - Asset, Market Regime, Strategy, Status
@@ -87,7 +141,7 @@ The app includes a **visual settings manager** - configure everything through th
 - **Asset Details** - Category, market performance, AI analysis status
 - **Market Regime Analysis** - Current regime, characteristics, risk assessment
 - **Strategy Deep Dive** - How it works, entry/exit conditions, why AI selected it
-- **Status Information** - 4 dynamic states (Stopped, Initializing, Active, Scanning)
+- **Status Information** - 4 dynamic states (Stopped, Initializing, Active, Scanning) + AI 5-Min Analysis
 
 #### ⚡ Enhanced User Experience
 - **Animated Status Indicators** - Pulse (Initializing), Scan (Searching)
@@ -541,8 +595,8 @@ INITIAL_CAPITAL="100000"
 
 ## 📊 Project Status
 
-**Current Version:** 2.4.0 🆕  
-**Latest Update:** November 6, 2025 - Interactive AI Intelligence Table  
+**Current Version:** 2.5.2 🆕  
+**Latest Update:** November 10, 2025 - Complete Visual Cleanup  
 **Phase 1 Completion:** October 17, 2025  
 **Phase 2 Completion:** October 18, 2025  
 **Phase 3 Completion:** October 18, 2025  
@@ -554,21 +608,27 @@ INITIAL_CAPITAL="100000"
 **v2.2.1 Release:** November 5, 2025 (Enhanced UX & Faster AI Initialization)  
 **v2.3.0 Release:** November 6, 2025 (AI Learning Loop & Risk Management)  
 **v2.4.0 Release:** November 6, 2025 (Interactive AI Intelligence Table)  
-**Total Lines of Code:** 10,800+  
+**v2.5.0 Release:** November 9, 2025 (AI 5-Minute Market Analysis)  
+**v2.5.1 Release:** November 9, 2025 (Unified Status Table)  
+**v2.5.2 Release:** November 10, 2025 (Complete Visual Cleanup - Minimalist Design)  
+**Total Lines of Code:** 11,400+  
 **Test Coverage:** 100% for all phases  
 **Strategies Implemented:** 3  
 **AI Components:** 3 (Regime Detector, Performance Monitor, Strategy Selector)  
 **Execution Modules:** 2 (Broker Interface with Risk Assessment, Risk Manager with Entry Analysis)  
-**Main Application:** `run_kiwi.py` (All-in-one web dashboard with interactive table)  
+**Main Application:** `run_kiwi.py` (All-in-one web dashboard with minimalist design)  
 **Trading Modes:** Real-Time Only (Auto-Start WebSocket streaming)  
 **Charts:** Professional TradingView integration - Full-width, optimized display  
 **Supported Assets:** 27 instruments across 5 categories (Stocks, Forex, Crypto, Indices, Commodities)  
-**UI:** Professional liquid-style dashboard with glass morphism + interactive AI Intelligence table  
+**UI:** Professional liquid-style dashboard with glass morphism + interactive AI Intelligence table + minimalist Apple-style design  
 **Connection Management:** Advanced WebSocket handling with retry logic  
 **Risk Features:** Entry Risk Score (0-100), Dynamic Position Sizing, Critical Warnings  
 **AI Learning:** User feedback loop with signal suppression (15-min cooldown)  
 **Interactive Table:** Clickable headers with professional card-based detail views  
-**Status:** ✅ Production Ready - Intelligent Trading with Interactive AI Intelligence & Risk Management
+**AI Analysis:** Real-time 5-minute market analysis with buy/sell recommendations  
+**Status Display:** Unified table format with 6 color-coded information rows  
+**Visual Design:** Clean minimalist interface with zero separator lines (32 removed)  
+**Status:** ✅ Production Ready - Intelligent Trading with Live AI Market Analysis & Risk Management
 
 ## 🤝 Contributing
 
@@ -610,4 +670,4 @@ SOFTWARE.
 
 **Built with 💚 by the Kiwi AI Team**
 
-Last Updated: October 18, 2025
+Last Updated: November 10, 2025

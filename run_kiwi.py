@@ -1197,7 +1197,6 @@ You'll receive instant alerts when strong trading signals are detected.
 def show_settings_page():
     """Display settings configuration page."""
     st.title("⚙️ Settings")
-    st.markdown("---")
     
     settings = load_settings()
     
@@ -1232,7 +1231,6 @@ def show_settings_page():
         if not is_paper:
             st.error("⚠️ WARNING: Live trading will use REAL MONEY!")
         
-        st.markdown("---")
         st.subheader("💰 Trading Parameters")
         
         col1, col2 = st.columns(2)
@@ -1266,7 +1264,6 @@ def show_settings_page():
                 help="Maximum percentage of capital in a single position"
             ) / 100
         
-        st.markdown("---")
         st.subheader("📈 Asset Selection")
         
         col1, col2 = st.columns(2)
@@ -1324,7 +1321,6 @@ def show_settings_page():
             
             st.info(f"📊 Trading: **{selected_asset}** ({trading_symbol})")
         
-        st.markdown("---")
         st.subheader("⏰ Trading Intervals")
         
         col1, col2 = st.columns(2)
@@ -1345,8 +1341,6 @@ def show_settings_page():
                 index=['1Min', '5Min', '15Min', '1Hour'].index(settings['realtime_timeframe']),
                 help="Bar timeframe for real-time mode"
             )
-        
-        st.markdown("---")
         
         col1, col2, col3 = st.columns([1, 1, 2])
         
@@ -1419,12 +1413,44 @@ def show_dashboard_page():
     # ============================================================================
     # PROFESSIONAL ASSET SELECTOR - Top Bar
     # ============================================================================
-    st.markdown("---")
+    
+    # Apple-style minimalist design with clean layout
+    st.markdown("""
+    <style>
+    /* Apple-style selectbox and button styling */
+    .stSelectbox > div > div {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 10px !important;
+        transition: all 0.3s ease !important;
+    }
+    .stSelectbox > div > div:hover {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(0, 217, 255, 0.4) !important;
+    }
+    .stSelectbox label {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        letter-spacing: 0.5px !important;
+        text-transform: uppercase !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     col_selector, col_controls = st.columns([3, 1])
     
     with col_selector:
-        st.markdown("### 📊 Select Trading Asset")
+        # Clean header with icon
+        st.markdown("""
+        <div style='margin-bottom: 20px;'>
+            <h3 style='color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; 
+                       display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;'>
+                <span style='font-size: 24px;'>📊</span>
+                Select Trading Asset
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Category and Asset selection in one row
         sel_col1, sel_col2 = st.columns([1, 2])
@@ -1485,10 +1511,41 @@ def show_dashboard_page():
                 st.rerun()
     
     with col_controls:
-        st.markdown("### ⚡ Trading Controls")
+        # Clean header with icon
+        st.markdown("""
+        <div style='margin-bottom: 20px;'>
+            <h3 style='color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; 
+                       display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;'>
+                <span style='font-size: 24px;'>⚡</span>
+                Trading Controls
+            </h3>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Start/Stop trading button
+        # Start/Stop trading button with Apple-style design
         if trading_state.running:
+            # Stop button with refined styling
+            st.markdown("""
+            <style>
+            div[data-testid="stButton"] > button[kind="secondary"] {
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9)) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                padding: 14px 24px !important;
+                font-size: 15px !important;
+                font-weight: 600 !important;
+                letter-spacing: 0.3px !important;
+                color: white !important;
+                box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+            div[data-testid="stButton"] > button[kind="secondary"]:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             if st.button("🛑 Stop Trading", use_container_width=True, type="secondary"):
                 try:
                     # First stop the trading flag
@@ -1520,6 +1577,28 @@ def show_dashboard_page():
                     st.error(f"❌ Error: {e}")
                     logger.logger.error(f"Error stopping trading: {e}")
         else:
+            # Start button with refined Apple-style design
+            st.markdown("""
+            <style>
+            div[data-testid="stButton"] > button[kind="primary"] {
+                background: linear-gradient(135deg, rgba(0, 217, 255, 1), rgba(0, 180, 255, 1)) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                padding: 14px 24px !important;
+                font-size: 15px !important;
+                font-weight: 600 !important;
+                letter-spacing: 0.3px !important;
+                color: white !important;
+                box-shadow: 0 4px 14px rgba(0, 217, 255, 0.4) !important;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+            div[data-testid="stButton"] > button[kind="primary"]:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 6px 20px rgba(0, 217, 255, 0.5) !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             if st.button("🚀 Start Trading", use_container_width=True, type="primary"):
                 # Check if there's already an active stream
                 if trading_state.stream is not None:
@@ -1557,8 +1636,6 @@ def show_dashboard_page():
     tradingview_symbol = settings.get('tradingview_symbol', 'NASDAQ:SPY')
     asset_category = settings.get('asset_category', 'Stocks')
     
-    st.markdown("---")
-    
     # ============================================================================
     # LIVE STATUS BAR
     # ============================================================================
@@ -1579,8 +1656,6 @@ def show_dashboard_page():
     with status_cols[3]:
         mode_text = "PAPER" if settings.get('is_paper_trading', True) else "🔴 LIVE"
         st.warning(f"**Mode:** {mode_text}")
-    
-    st.markdown("---")
     
     # ============================================================================
     # TRADINGVIEW CHART - Full Width Professional Display
@@ -1679,8 +1754,6 @@ def show_dashboard_page():
         """
     components.html(tradingview_html, height=700)
     
-    st.markdown("---")
-    
     # ============================================================================
     # AI INTELLIGENCE & ANALYSIS - Unified Table View
     # ============================================================================
@@ -1691,20 +1764,19 @@ def show_dashboard_page():
         'TREND': '🟢',
         'SIDEWAYS': '🟡', 
         'VOLATILE': '🔴',
-        'Unknown': '⚪'
+        'Unknown': '⚪',
+        'Initializing...': '🔄'
     }
     
-    # Current regime
-    if trading_state.running and trading_state.current_regime in ['Unknown', 'None', None]:
-        regime_display = "Initializing..."
-        regime_icon = '🔄'
-    else:
-        regime_display = trading_state.current_regime or "Unknown"
-        regime_icon = regime_colors.get(regime_display, '⚪')
+    # Current regime - show actual state from trading_state
+    regime_display = trading_state.current_regime or "Unknown"
+    regime_icon = regime_colors.get(regime_display, '⚪')
     
-    # Current strategy
-    if trading_state.current_strategy in ['None', None, 'Analyzing...']:
-        strategy_display = "Analyzing..." if trading_state.running else "None"
+    # Current strategy - show actual state from trading_state
+    if trading_state.current_strategy in ['None', None]:
+        strategy_display = "None"
+    elif trading_state.current_strategy == 'Analyzing...':
+        strategy_display = "Analyzing..."
     else:
         strategy_name = trading_state.current_strategy
         strategy_display = strategy_name.replace('Strategy', '').replace('TrendFollowing', 'Trend Following').replace('MeanReversion', 'Mean Reversion').replace('VolatilityBreakout', 'Volatility Breakout')
@@ -1737,15 +1809,6 @@ def show_dashboard_page():
     if 'show_status_details' not in st.session_state:
         st.session_state.show_status_details = False
     
-    # Create unified table-like display with clickable headers
-    st.markdown(f"""
-    <div style='background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(0,217,255,0.2); overflow: hidden;'>
-        <!-- Header Row with Clickable Buttons -->
-        <div style='background: linear-gradient(135deg, rgba(0, 217, 255, 0.15) 0%, rgba(76, 175, 254, 0.15) 100%); 
-                    padding: 8px 24px; border-bottom: 1px solid rgba(0,217,255,0.3);'>
-            <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;'>
-    """, unsafe_allow_html=True)
-    
     # Create button columns for headers
     header_cols = st.columns(4)
     
@@ -1777,43 +1840,33 @@ def show_dashboard_page():
             st.session_state.show_regime_details = False
             st.session_state.show_strategy_details = False
     
-    st.markdown("""
+    # Data row - clean display without extra containers
+    st.markdown(f"""
+    <div style='background: rgba(255,255,255,0.02); border-radius: 8px; padding: 24px; margin-top: 10px;'>
+        <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: center;'>
+            <div style='text-align: center;'>
+                <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{selected_symbol}</p>
+                <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>{asset_category}</p>
+            </div>
+            <div style='text-align: center;'>
+                <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{regime_icon} {regime_display}</p>
+                <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>Real-time detection</p>
+            </div>
+            <div style='text-align: center;'>
+                <p style='margin: 0; color: #00d9ff; font-size: 20px; font-weight: 700;'>🎯 {strategy_display}</p>
+                <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>Auto-selected</p>
+            </div>
+            <div style='text-align: center;'>
+                <p style='margin: 0; color: {status_color}; font-size: 20px; font-weight: 700;'>{status_display}</p>
+                <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>{status_detail}</p>
             </div>
         </div>
+    </div>
     """, unsafe_allow_html=True)
     
-    # Content area - either show data row or detailed view
-    if not any([st.session_state.show_asset_details, st.session_state.show_regime_details, 
-                st.session_state.show_strategy_details, st.session_state.show_status_details]):
-        # Show normal data row
-        st.markdown(f"""
-        <!-- Data Row -->
-        <div style='padding: 24px; background: rgba(255,255,255,0.02);'>
-            <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: center;'>
-                <div style='text-align: center;'>
-                    <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{selected_symbol}</p>
-                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>{asset_category}</p>
-                </div>
-                <div style='text-align: center;'>
-                    <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{regime_icon} {regime_display}</p>
-                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>Real-time detection</p>
-                </div>
-                <div style='text-align: center;'>
-                    <p style='margin: 0; color: #00d9ff; font-size: 20px; font-weight: 700;'>🎯 {strategy_display}</p>
-                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>Auto-selected</p>
-                </div>
-                <div style='text-align: center;'>
-                    <p style='margin: 0; color: {status_color}; font-size: 20px; font-weight: 700;'>{status_display}</p>
-                    <p style='margin: 4px 0 0 0; color: #888; font-size: 12px;'>{status_detail}</p>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # Show detailed view inside table
-        st.markdown("""
-        <div style='padding: 24px; background: rgba(255,255,255,0.02);'>
-        """, unsafe_allow_html=True)
+    # Show detailed view BELOW the table if any button was clicked
+    if any([st.session_state.show_asset_details, st.session_state.show_regime_details, 
+            st.session_state.show_strategy_details, st.session_state.show_status_details]):
     
         # Show detailed information based on which button was clicked
         if st.session_state.show_asset_details:
@@ -2209,20 +2262,20 @@ def show_dashboard_page():
                 </div>
                 """, unsafe_allow_html=True)
             elif trading_state.current_regime == "Initializing...":
-                # Professional Status Details - Initializing
+                # Professional Status Details - Initializing (Static Display)
                 st.markdown("""
                 <div style='color: #00d9ff; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
                     🔄 System Status: Initializing
                 </div>
                 """, unsafe_allow_html=True)
                 
-                st.markdown("""
+                st.markdown(f"""
                 <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
                     <p style='color: #00d9ff; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
                         🔄 Initializing AI Intelligence
                     </p>
                     <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
-                        The system is collecting live market data and preparing analysis algorithms...
+                        Collecting live market data for <strong>{selected_symbol}</strong> and preparing analysis algorithms...
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -2260,10 +2313,10 @@ def show_dashboard_page():
                     <p style='color: #00d9ff; margin-top: 15px; font-weight: 600; font-size: 16px;'>Initializing...</p>
                 </div>
                 <style>
-                    @keyframes pulse {
-                        0%, 100% { transform: scale(1); opacity: 1; }
-                        50% { transform: scale(1.1); opacity: 0.7; }
-                    }
+                    @keyframes pulse {{
+                        0%, 100% {{ transform: scale(1); opacity: 1; }}
+                        50% {{ transform: scale(1.1); opacity: 0.7; }}
+                    }}
                 </style>
                 """, unsafe_allow_html=True)
             elif trading_state.position_state == 'long':
@@ -2322,60 +2375,183 @@ def show_dashboard_page():
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                # Professional Status Details - Scanning
-                st.markdown(f"""
-                <div style='color: #2196f3; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
-                    🔍 System Status: Actively Scanning
-                </div>
-                """, unsafe_allow_html=True)
+                # Professional Status Details - Scanning (Unified Full Box)
                 
-                st.markdown(f"""
-                <div style='background: rgba(33,150,243,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(33,150,243,0.3); margin-bottom: 15px;'>
-                    <p style='color: #2196f3; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
-                        🔍 Scanning for Opportunities
-                    </p>
-                    <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
-                        AI is actively analyzing <strong>{selected_symbol}</strong> for high-probability entry signals...
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                # Animated Status Switcher - cycles every 10 seconds
+                current_time = int(time.time())
+                cycle_index = (current_time // 10) % 6  # 6 status items, switch every 10 seconds
                 
-                # Current Analysis
+                # Define all status items
+                status_items = [
+                    {
+                        'icon': '🔍',
+                        'label': 'Scanning Status',
+                        'content': f'AI actively analyzing <strong>{selected_symbol}</strong> for high-probability entry signals'
+                    },
+                    {
+                        'icon': '📊',
+                        'label': 'Monitoring',
+                        'content': 'Price action analyzed every minute with 3-second updates'
+                    },
+                    {
+                        'icon': '🧠',
+                        'label': 'Market Regime',
+                        'content': f'Evaluating <strong>{regime_display}</strong> market conditions'
+                    },
+                    {
+                        'icon': '🎯',
+                        'label': 'Active Strategy',
+                        'content': f'Using <strong>{strategy_display}</strong> strategy'
+                    },
+                    {
+                        'icon': '🎯',
+                        'label': 'Looking For',
+                        'content': 'Optimal entry points • Risk/reward setups • Multi-indicator confirmation • Volume validation'
+                    },
+                    {
+                        'icon': '🔔',
+                        'label': 'Alert Status',
+                        'content': 'Ready to notify when strong buy signals detected with high confidence'
+                    }
+                ]
+                
+                # Get current status item
+                current_status = status_items[cycle_index]
+                
+                # Build progress dots
+                dot_color_0 = "#2196f3" if cycle_index == 0 else "rgba(33,150,243,0.3)"
+                dot_color_1 = "#2196f3" if cycle_index == 1 else "rgba(33,150,243,0.3)"
+                dot_color_2 = "#2196f3" if cycle_index == 2 else "rgba(33,150,243,0.3)"
+                dot_color_3 = "#2196f3" if cycle_index == 3 else "rgba(33,150,243,0.3)"
+                dot_color_4 = "#2196f3" if cycle_index == 4 else "rgba(33,150,243,0.3)"
+                dot_color_5 = "#2196f3" if cycle_index == 5 else "rgba(33,150,243,0.3)"
+                
+                # Build the animated status display - UNIFIED FULL BOX with same gradient throughout
                 st.markdown(f"""
-                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
-                    <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>📊 CURRENT ANALYSIS</p>
-                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
-                        <div style='padding: 5px 0;'>📊 Monitoring price action every minute</div>
-                        <div style='padding: 5px 0;'>🧠 Evaluating <strong>{regime_display}</strong> market conditions</div>
-                        <div style='padding: 5px 0;'>🎯 Using <strong>{strategy_display}</strong> strategy</div>
-                        <div style='padding: 5px 0;'>⚡ Ready to alert on strong signals</div>
+                <style>
+                    @keyframes fadeIn {{
+                        from {{ opacity: 0; transform: translateY(-10px); }}
+                        to {{ opacity: 1; transform: translateY(0); }}
+                    }}
+                </style>
+                <div style='background: linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(0,217,255,0.15) 100%); 
+                            border-radius: 12px; padding: 30px; border: 2px solid rgba(33,150,243,0.4); 
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: fadeIn 0.5s ease-in;'>
+                    <div style='text-align: center; margin-bottom: 25px;'>
+                        <p style='color: #2196f3; font-size: 18px; font-weight: 700; margin: 0;'>🔍 AI SCANNING STATUS</p>
+                        <p style='color: #ffffff; margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;'>Real-time market analysis and signal detection</p>
+                    </div>
+                    <div style='text-align: center; margin-bottom: 25px;'>
+                        <div style='margin-bottom: 15px;'>
+                            <span style='font-size: 48px;'>{current_status['icon']}</span>
+                        </div>
+                        <div style='margin-bottom: 12px;'>
+                            <span style='color: #2196f3; font-weight: 700; font-size: 18px;'>{current_status['label']}</span>
+                        </div>
+                        <div style='max-width: 600px; margin: 0 auto;'>
+                            <span style='color: #ffffff; font-size: 15px; line-height: 1.8;'>{current_status['content']}</span>
+                        </div>
+                    </div>
+                    <div style='display: flex; justify-content: center; gap: 10px; margin-top: 20px;'>
+                        <div style='width: 10px; height: 10px; border-radius: 50%; background: {dot_color_0}; transition: all 0.3s ease;'></div>
+                        <div style='width: 10px; height: 10px; border-radius: 50%; background: {dot_color_1}; transition: all 0.3s ease;'></div>
+                        <div style='width: 10px; height: 10px; border-radius: 50%; background: {dot_color_2}; transition: all 0.3s ease;'></div>
+                        <div style='width: 10px; height: 10px; border-radius: 50%; background: {dot_color_3}; transition: all 0.3s ease;'></div>
+                        <div style='width: 10px; height: 10px; border-radius: 50%; background: {dot_color_4}; transition: all 0.3s ease;'></div>
+                        <div style='width: 10px; height: 10px; border-radius: 50%; background: {dot_color_5}; transition: all 0.3s ease;'></div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # What AI Is Looking For
-                st.markdown("""
-                <div style='background: rgba(156,39,176,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(156,39,176,0.3); margin-bottom: 15px;'>
-                    <p style='color: #9c27b0; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🎯 WHAT AI IS LOOKING FOR</p>
-                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
-                        <div style='padding: 5px 0;'>• Optimal entry points</div>
-                        <div style='padding: 5px 0;'>• Favorable risk/reward setups</div>
-                        <div style='padding: 5px 0;'>• Confirmation from multiple indicators</div>
-                        <div style='padding: 5px 0;'>• Volume validation</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Notification Alert
-                st.markdown("""
-                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3);'>
-                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🔔 YOU'LL BE NOTIFIED WHEN</p>
-                    <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
-                        A strong buy signal is detected with high confidence based on current market regime 
-                        and strategy criteria. Buy signals will appear prominently when all conditions align.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                # AI 5-Minute Analysis (NEW FEATURE)
+                if 'bar_history' in st.session_state and selected_symbol in st.session_state.bar_history:
+                    bars = st.session_state.bar_history[selected_symbol]
+                    
+                    if len(bars) >= 5:  # Need at least 5 bars for analysis
+                        # Get last 5 bars for 5-minute analysis
+                        recent_bars = bars[-5:]
+                        
+                        # Calculate price movement
+                        first_price = recent_bars[0]['c']
+                        last_price = recent_bars[-1]['c']
+                        price_change = ((last_price - first_price) / first_price) * 100
+                        
+                        # Calculate volume trend
+                        avg_volume = sum(bar.get('v', 0) for bar in recent_bars) / len(recent_bars)
+                        latest_volume = recent_bars[-1].get('v', 0)
+                        volume_trend = "increasing" if latest_volume > avg_volume else "decreasing"
+                        
+                        # Determine trend direction
+                        if price_change > 0.5:
+                            trend_direction = "📈 Upward"
+                            trend_color = "#4caf50"
+                            trend_bg = "rgba(76,175,80,0.1)"
+                            trend_border = "rgba(76,175,80,0.3)"
+                        elif price_change < -0.5:
+                            trend_direction = "📉 Downward"
+                            trend_color = "#f44336"
+                            trend_bg = "rgba(244,67,54,0.1)"
+                            trend_border = "rgba(244,67,54,0.3)"
+                        else:
+                            trend_direction = "➡️ Sideways"
+                            trend_color = "#ff9800"
+                            trend_bg = "rgba(255,152,0,0.1)"
+                            trend_border = "rgba(255,152,0,0.3)"
+                        
+                        # Generate AI analysis message
+                        if price_change > 0.5:
+                            if regime_display == "TREND":
+                                signal_assessment = "✅ BULLISH SIGNAL"
+                                signal_color = "#4caf50"
+                                reasoning = f"Price is rising (+{price_change:.2f}%) in a <strong>TREND</strong> market. This aligns with our {strategy_display} strategy. Volume is {volume_trend}, confirming momentum."
+                                recommendation = "💡 <strong>This could be a good opportunity to BUY</strong> if entry conditions are fully met. Monitor for confirmation signals."
+                            else:
+                                signal_assessment = "⚠️ CAUTION"
+                                signal_color = "#ff9800"
+                                reasoning = f"Price is rising (+{price_change:.2f}%) but market regime is <strong>{regime_display}</strong>. Current conditions may not sustain upward movement."
+                                recommendation = "💡 <strong>Wait for better setup.</strong> Price rise in non-trending markets often leads to reversals."
+                        elif price_change < -0.5:
+                            if regime_display == "SIDEWAYS" and strategy_display == "Mean Reversion":
+                                signal_assessment = "✅ POTENTIAL OPPORTUNITY"
+                                signal_color = "#4caf50"
+                                reasoning = f"Price dropped ({price_change:.2f}%) in a <strong>SIDEWAYS</strong> market. Mean reversion strategy may find entry as price approaches support."
+                                recommendation = "💡 <strong>Monitor for bounce signals</strong> near support levels. This could present a buying opportunity."
+                            else:
+                                signal_assessment = "🛑 BEARISH SIGNAL"
+                                signal_color = "#f44336"
+                                reasoning = f"Price is falling ({price_change:.2f}%) with {volume_trend} volume. Current {strategy_display} strategy suggests caution."
+                                recommendation = "💡 <strong>NOT a good time to BUY.</strong> Wait for price stabilization or trend reversal confirmation."
+                        else:
+                            signal_assessment = "⏸️ NEUTRAL"
+                            signal_color = "#888"
+                            reasoning = f"Price movement is minimal ({price_change:+.2f}%) over the last 5 minutes. Market is consolidating."
+                            recommendation = "💡 <strong>No clear signal yet.</strong> Waiting for more decisive price action before suggesting entry."
+                        
+                        # Display AI 5-Minute Analysis
+                        st.markdown(f"""
+                        <div style='background: {trend_bg}; border-radius: 8px; padding: 15px; border: 1px solid {trend_border}; margin-bottom: 15px;'>
+                            <p style='color: {trend_color}; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🧠 AI 5-MINUTE ANALYSIS</p>
+                            <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
+                                <div style='padding: 5px 0;'><strong>Price Movement:</strong> {trend_direction} ({price_change:+.2f}%)</div>
+                                <div style='padding: 5px 0;'><strong>Current Price:</strong> ${last_price:.2f}</div>
+                                <div style='padding: 5px 0;'><strong>Volume Trend:</strong> {volume_trend.capitalize()}</div>
+                                <div style='padding: 5px 0; margin-top: 10px;'><span style='color: {signal_color}; font-weight: 600;'>{signal_assessment}</span></div>
+                                <div style='padding: 5px 0; margin-top: 5px; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 10px;'>
+                                    {reasoning}
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # AI Recommendation Box
+                        st.markdown(f"""
+                        <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
+                            <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🎯 AI RECOMMENDATION</p>
+                            <p style='color: #ffffff; margin: 0; font-size: 13px; line-height: 1.6;'>
+                                {recommendation}
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
                 
                 # Add scanning animation
                 st.markdown("""
@@ -2394,23 +2570,7 @@ def show_dashboard_page():
                 </style>
                 """, unsafe_allow_html=True)
     
-    # Close the content div and table (moved inside to prevent showing as text)
-    if any([st.session_state.show_asset_details, st.session_state.show_regime_details, 
-            st.session_state.show_strategy_details, st.session_state.show_status_details]):
-        # Close the detail content div
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Always close the table with footer
-    st.markdown("""
-    <div style='padding: 16px 24px; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05);'>
-        <p style='margin: 0; color: #b0b0b0; font-size: 12px; text-align: center;'>
-            🤖 AI updates every minute • 📊 Real-time price action analysis • ⏱️ Dashboard refreshes every 3 seconds
-        </p>
-    </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("---")
+    # Footer section removed - no table wrapper needed
     
     # Show error notification if there are recent errors
     recent_errors = [e for e in trading_state.error_log if e['severity'] == 'ERROR']
@@ -2432,21 +2592,18 @@ def show_dashboard_page():
             recommended_qty, sizing_explanation = risk_manager.recommend_position_size(base_qty, risk_score)
             
             # Show position sizing recommendation
-            st.markdown("---")
             st.markdown("##### 💰 Recommended Position Sizing")
             
             sizing_color = "#4caf50" if risk_level == "LOW" else "#ff9800" if risk_level == "MEDIUM" else "#f44336"
             
             st.markdown(f"""
-            <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid {sizing_color};'>
+            <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid {sizing_color}; margin-top: 15px;'>
                 <p style='margin: 0; font-size: 13px;'>{sizing_explanation}</p>
                 <p style='margin: 8px 0 0 0; color: {sizing_color}; font-size: 14px; font-weight: 600;'>
                     💡 Suggested: {recommended_qty} shares (adjust based on your capital)
                 </p>
             </div>
             """, unsafe_allow_html=True)
-        
-        st.markdown("---")
         
         # Primary action buttons
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -2475,7 +2632,6 @@ def show_dashboard_page():
                 st.rerun()
         
         # Phase 5: User Action Confirmation Loop - "Did You Buy?" Feature
-        st.markdown("---")
         st.markdown("##### 📝 Manual Execution Confirmation")
         st.markdown("*Did you manually execute this trade on TradingView?*")
         
@@ -2518,12 +2674,12 @@ def show_dashboard_page():
                     time.sleep(2)
                     st.rerun()
     
-    st.markdown("---")
-        
-    # Account metrics
-    if trading_state.broker:
+    # ============================================================================
+    # ACCOUNT METRICS - Only show if trading is active
+    # ============================================================================
+    if trading_state.broker and trading_state.running:
         try:
-            st.subheader("Account Status")
+            st.subheader("💼 Account Status")
             acc_cols = st.columns(4)
             
             portfolio_value = account.get('portfolio_value', 0)
@@ -2542,7 +2698,6 @@ def show_dashboard_page():
                 f"${total_pl:.2f}",
                 delta=f"{(total_pl / portfolio_value * 100):.2f}%" if portfolio_value > 0 else "0%"
             )
-            st.markdown("---")
             
             # Market Intelligence & Risk
             st.subheader("Market Analysis & Risk")
@@ -2577,7 +2732,6 @@ def show_dashboard_page():
                 st.markdown(f"- **Status:** {status_color_map.get(risk_summary['risk_status'], '⚪')} {risk_summary['risk_status']}")
                 st.markdown(f"- **Drawdown:** {risk_summary['drawdown_pct']:.2f}%")
 
-            st.markdown("---")
             
             # Two columns: Positions & Trading Activity
             left_col, right_col = st.columns([3, 2])
@@ -2613,22 +2767,19 @@ def show_dashboard_page():
         
         except Exception as e:
             st.error(f"Error fetching account data: {e}")
-    else:
-        st.info("Start trading to see live data")
-    
-    # Auto-refresh dashboard when trading is active
+    # Auto-refresh dashboard when trading is active - ONLY ONCE at the bottom
     if trading_state.running:
-        # Show refresh indicator
-        st.markdown("---")
-        refresh_col1, refresh_col2, refresh_col3 = st.columns([1, 2, 1])
-        with refresh_col2:
-            st.markdown("""
-            <div style='text-align: center; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3);'>
-                <p style='margin: 0; color: #00d9ff; font-size: 14px;'>
-                    🔄 <b>Live Updates Active</b> - Refreshing every 3 seconds
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+        # Create a container for the refresh indicator to prevent duplicates
+        with st.container():
+            refresh_col1, refresh_col2, refresh_col3 = st.columns([1, 2, 1])
+            with refresh_col2:
+                st.markdown("""
+                <div style='text-align: center; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3); margin-top: 20px;'>
+                    <p style='margin: 0; color: #00d9ff; font-size: 14px;'>
+                        🔄 <b>Live Updates Active</b> - Refreshing every 3 seconds
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
         
         time.sleep(3)  # Refresh every 3 seconds for responsive UI
         st.rerun()
@@ -2637,7 +2788,6 @@ def show_dashboard_page():
 def show_control_page():
     """Display trading control panel."""
     st.title("🎮 Trading Control")
-    st.markdown("---")
     
     settings = load_settings()
     
@@ -2665,8 +2815,6 @@ def show_control_page():
     if not REALTIME_AVAILABLE:
         st.error("❌ Install alpaca-trade-api first:\n```pip install alpaca-trade-api```")
         return
-    
-    st.markdown("---")
     
     # Stop button
     if trading_state.running:
@@ -2711,8 +2859,7 @@ def show_control_page():
                     st.error(f"❌ Error stopping trading: {e}")
                     log_error('Control', 'Error stopping trading', e)
     
-    st.markdown("---")
-    st.subheader("� Current Configuration")
+    st.subheader("⚙️ Current Configuration")
     
     config_col1, config_col2 = st.columns(2)
     
@@ -2730,7 +2877,6 @@ def show_control_page():
 def show_help_page():
     """Display help and documentation."""
     st.title("📖 Help & Documentation")
-    st.markdown("---")
     
     st.markdown("""
     # 🥝 Kiwi AI Trading System v2.0
@@ -2744,8 +2890,6 @@ def show_help_page():
     3. **Test Connection**: Use the "Test Connection" button to verify your setup
     4. **Auto-Start**: System automatically starts when you open the Dashboard
     5. **Monitor**: Watch real-time TradingView charts and AI signals
-    
-    ---
     
     ## 🆕 What's New in v2.0
     
@@ -2768,16 +2912,12 @@ def show_help_page():
     - **Indices**: NASDAQ, S&P 500, Dow Jones
     - **Commodities**: Gold, Silver, Oil, Natural Gas
     
-    ---
-    
     ## 🛡️ Safety Features
     
     - **Paper Trading**: Test with fake money before going live (enabled by default)
     - **Risk Management**: Automatic position sizing and stop-loss calculation
     - **Regime Detection**: Adapts to different market conditions
     - **Performance Monitoring**: Tracks strategy performance and switches if needed
-    
-    ---
     
     ## ⚙️ Configuration
     
@@ -2790,8 +2930,6 @@ def show_help_page():
     - **Trading Symbol**: Which stock to trade (e.g., SPY, QQQ)
     - **Intervals**: How often to check for signals
     
-    ---
-    
     ## 📊 Strategies
     
     Kiwi AI includes three adaptive strategies:
@@ -2802,8 +2940,6 @@ def show_help_page():
     
     The system automatically selects the best strategy based on current market regime.
     
-    ---
-    
     ## ⚠️ Important Notes
     
     - Always test with paper trading first!
@@ -2812,9 +2948,7 @@ def show_help_page():
     - Market conditions can change rapidly
     - Past performance doesn't guarantee future results
     
-    ---
-    
-    ## � Troubleshooting
+    ## 🔧 Troubleshooting
     
     ### "Connection limit exceeded" Error
     
@@ -2839,9 +2973,7 @@ def show_help_page():
     - **Insufficient funds:** Check your account balance in the Dashboard
     - **Network errors:** Verify your internet connection
     
-    ---
-    
-    ## �🔗 Resources
+    ## 🔗 Resources
     
     - **Alpaca API**: [alpaca.markets](https://alpaca.markets/)
     - **Documentation**: See README.md in project folder
@@ -2859,14 +2991,12 @@ def show_help_page():
     
     """)
     
-    st.markdown("---")
     st.success("💡 Tip: Start with paper trading and small position sizes to learn the system!")
 
 
 def show_error_log_page():
     """Display error log viewer."""
     st.title("🐛 Error & Debug Log")
-    st.markdown("---")
     
     col1, col2, col3 = st.columns([2, 1, 1])
     
@@ -2883,8 +3013,6 @@ def show_error_log_page():
             st.success("Log cleared!")
             time.sleep(1)
             st.rerun()
-    
-    st.markdown("---")
     
     # Filter options
     col1, col2, col3 = st.columns(3)
@@ -2905,8 +3033,6 @@ def show_error_log_page():
     
     with col3:
         show_traceback = st.checkbox("Show Traceback", value=False)
-    
-    st.markdown("---")
     
     # Display errors
     if not trading_state.error_log:
@@ -2938,17 +3064,14 @@ def show_error_log_page():
                     st.markdown(f"**Message:** {error['message']}")
                     
                     if error['exception']:
-                        st.markdown("---")
                         st.markdown("**Exception:**")
                         st.code(error['exception'], language='python')
                     
                     if error['context']:
-                        st.markdown("---")
                         st.markdown("**Context:**")
                         st.json(error['context'])
                     
                     if show_traceback and error['traceback']:
-                        st.markdown("---")
                         st.markdown("**Full Traceback:**")
                         st.code(error['traceback'], language='python')
                     
@@ -2962,10 +3085,7 @@ Exception: {error['exception']}
 Context: {error['context']}
 Traceback: {error['traceback']}
 """
-                    st.markdown("---")
                     st.text_area("Copy Error Details:", error_text, height=100, key=f"error_{idx}")
-    
-    st.markdown("---")
     
     # Error statistics
     if trading_state.error_log:
@@ -2996,7 +3116,6 @@ Traceback: {error['traceback']}
                 st.text(f"{severity}: {count}")
         
         # Recent error timeline
-        st.markdown("---")
         st.markdown("**Recent Error Timeline:**")
         
         recent_errors = trading_state.error_log[:10]
@@ -3496,13 +3615,16 @@ def main():
                 <p class="sidebar-logo-subtitle">Trading System</p>
             </div>
         """, unsafe_allow_html=True)
-        st.markdown("---")
         
         # Navigation Menu with Professional Design using Custom HTML
         st.markdown('<div class="nav-group-header">NAVIGATION</div>', unsafe_allow_html=True)
         
-        # Professional Navigation with clickable divs - All together
+        # Professional Navigation with clickable divs - Collapsible menu
         current_page = st.session_state.current_page
+        
+        # Initialize dashboard expanded state
+        if 'dashboard_expanded' not in st.session_state:
+            st.session_state.dashboard_expanded = True
         
         # Check for query parameter navigation and handle clicks
         query_params = st.query_params
@@ -3514,37 +3636,121 @@ def main():
             st.query_params.clear()
             st.rerun()
         
-        # Create navigation buttons with proper click handlers
-        st.markdown("### NAVIGATION")
+        # Create collapsible navigation with Apple-style design
+        st.markdown("### MENU")
         
-        # Dashboard (merged with Control)
-        dashboard_active = "active" if current_page == "Dashboard" else ""
-        if st.button("Dashboard", key="nav_dashboard", use_container_width=True, type="primary" if dashboard_active else "secondary"):
-            st.session_state.current_page = "Dashboard"
+        # Dashboard - Main button with expand/collapse
+        dashboard_active = current_page in ["Dashboard", "Settings", "Error Log", "Help"]
+        expand_icon = "▼" if st.session_state.dashboard_expanded else "▶"
+        
+        # Custom styled button for Dashboard
+        st.markdown(f"""
+        <style>
+        .dashboard-main-btn {{
+            background: {'linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(76, 175, 254, 0.2))' if dashboard_active else 'rgba(255, 255, 255, 0.05)'};
+            border: 1px solid {'rgba(0, 217, 255, 0.4)' if dashboard_active else 'rgba(255, 255, 255, 0.1)'};
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        .dashboard-main-btn:hover {{
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(76, 175, 254, 0.15));
+            border-color: rgba(0, 217, 255, 0.3);
+            transform: translateX(4px);
+        }}
+        .dashboard-main-text {{
+            color: {'#00d9ff' if dashboard_active else '#ffffff'};
+            font-weight: 600;
+            font-size: 15px;
+        }}
+        .dashboard-expand-icon {{
+            color: {'#00d9ff' if dashboard_active else 'rgba(255, 255, 255, 0.5)'};
+            font-size: 14px;
+        }}
+        .sub-menu-item {{
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            padding: 10px 16px;
+            margin: 4px 0 4px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }}
+        .sub-menu-item:hover {{
+            background: rgba(0, 217, 255, 0.1);
+            border-left-color: rgba(0, 217, 255, 0.6);
+            transform: translateX(4px);
+        }}
+        .sub-menu-item.active {{
+            background: rgba(0, 217, 255, 0.15);
+            border-left-color: #00d9ff;
+        }}
+        .sub-menu-text {{
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+        }}
+        .sub-menu-text.active {{
+            color: #00d9ff;
+            font-weight: 600;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Dashboard main button - toggle expand/collapse
+        if st.button(f"{expand_icon}  📊 Dashboard", key="nav_dashboard_main", use_container_width=True, 
+                     type="primary" if dashboard_active else "secondary"):
+            st.session_state.dashboard_expanded = not st.session_state.dashboard_expanded
+            # If clicking on dashboard, set to Dashboard page
+            if not st.session_state.dashboard_expanded:
+                st.session_state.current_page = "Dashboard"
             st.rerun()
         
-        # Settings
-        settings_active = "active" if current_page == "Settings" else ""
-        if st.button("Settings", key="nav_settings", use_container_width=True, type="primary" if settings_active else "secondary"):
-            st.session_state.current_page = "Settings"
-            st.rerun()
-        
-        # Error Log
-        error_log_active = "active" if current_page == "Error Log" else ""
-        if st.button("Error Log", key="nav_error_log", use_container_width=True, type="primary" if error_log_active else "secondary"):
-            st.session_state.current_page = "Error Log"
-            st.rerun()
-        
-        # Help
-        help_active = "active" if current_page == "Help" else ""
-        if st.button("Help", key="nav_help", use_container_width=True, type="primary" if help_active else "secondary"):
-            st.session_state.current_page = "Help"
-            st.rerun()
+        # Show sub-menu items when expanded
+        if st.session_state.dashboard_expanded:
+            # Dashboard Overview
+            col1, col2 = st.columns([0.1, 0.9])
+            with col2:
+                dashboard_selected = current_page == "Dashboard"
+                if st.button("📈 Overview", key="nav_dashboard_overview", use_container_width=True,
+                           type="primary" if dashboard_selected else "secondary"):
+                    st.session_state.current_page = "Dashboard"
+                    st.rerun()
+            
+            # Settings
+            col1, col2 = st.columns([0.1, 0.9])
+            with col2:
+                settings_selected = current_page == "Settings"
+                if st.button("⚙️ Settings", key="nav_settings_sub", use_container_width=True,
+                           type="primary" if settings_selected else "secondary"):
+                    st.session_state.current_page = "Settings"
+                    st.rerun()
+            
+            # Error Log
+            col1, col2 = st.columns([0.1, 0.9])
+            with col2:
+                error_log_selected = current_page == "Error Log"
+                if st.button("🔍 Error Log", key="nav_error_log_sub", use_container_width=True,
+                           type="primary" if error_log_selected else "secondary"):
+                    st.session_state.current_page = "Error Log"
+                    st.rerun()
+            
+            # Help
+            col1, col2 = st.columns([0.1, 0.9])
+            with col2:
+                help_selected = current_page == "Help"
+                if st.button("❓ Help", key="nav_help_sub", use_container_width=True,
+                           type="primary" if help_selected else "secondary"):
+                    st.session_state.current_page = "Help"
+                    st.rerun()
         
         # Update page variable for routing
         page = st.session_state.current_page
-        
-        st.markdown("---")
         
         # System info with professional styling
         st.markdown("### System Info")
@@ -3585,7 +3791,9 @@ def main():
                 </div>
             </div>
         """, unsafe_allow_html=True)
-        
+    
+    # End of sidebar - NO additional content should appear below
+    # All navigation is within the collapsible Dashboard menu
     
     # Route to appropriate page
     if page == "Dashboard":
