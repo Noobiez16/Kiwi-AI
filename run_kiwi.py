@@ -3153,11 +3153,11 @@ def main():
     st.markdown("""
         <style>
         /* Import Professional Font */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;600;700&display=swap');
         
         /* Global Styles */
         * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         
         /* Main App Background with Gradient */
@@ -3616,9 +3616,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
         
-        # Navigation Menu with Professional Design using Custom HTML
-        st.markdown('<div class="nav-group-header">NAVIGATION</div>', unsafe_allow_html=True)
-        
         # Professional Navigation with clickable divs - Collapsible menu
         current_page = st.session_state.current_page
         
@@ -3637,7 +3634,7 @@ def main():
             st.rerun()
         
         # Create collapsible navigation with Apple-style design
-        st.markdown("### MENU")
+        st.markdown("### NAVIGATION")
         
         # Dashboard - Main button with expand/collapse
         dashboard_active = current_page in ["Dashboard", "Settings", "Error Log", "Help"]
