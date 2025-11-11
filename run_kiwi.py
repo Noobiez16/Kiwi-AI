@@ -293,6 +293,98 @@ ASSET_CATEGORIES = {
     }
 }
 
+def create_nav_button(icon_name: str, text: str, key: str, is_active: bool = False, expand_icon: str = ""):
+    """
+    Create a custom navigation button with Iconly icon that works with Streamlit.
+    
+    Args:
+        icon_name: Name of the icon
+        text: Button text
+        key: Unique key for the button
+        is_active: Whether the button is active
+        expand_icon: Optional expand/collapse icon (e.g., "▼" or "▶")
+        
+    Returns:
+        HTML string for the button
+    """
+    icon = get_iconly_icon(icon_name, 18, "#00d9ff" if is_active else "#ffffff")
+    bg_color = "linear-gradient(135deg, rgba(0, 217, 255, 0.18) 0%, rgba(76, 175, 254, 0.18) 100%)" if is_active else "rgba(255, 255, 255, 0.03)"
+    border_color = "#00d9ff" if is_active else "rgba(255, 255, 255, 0.08)"
+    text_color = "#00d9ff" if is_active else "#e0e0e0"
+    
+    return f"""
+    <div style="margin: 6px 0;">
+        <button 
+            class="custom-nav-btn" 
+            data-key="{key}"
+            data-active="{str(is_active).lower()}"
+            style="
+                width: 100%;
+                background: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 10px;
+                padding: 14px 16px;
+                color: {text_color};
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-family: 'Ubuntu', sans-serif;
+            "
+            onmouseover="this.style.background='rgba(0, 217, 255, 0.12)'; this.style.borderColor='rgba(0, 217, 255, 0.4)'; this.style.transform='translateX(4px)';"
+            onmouseout="this.style.background='{bg_color}'; this.style.borderColor='{border_color}'; this.style.transform='translateX(0)';"
+            onclick="
+                const event = new CustomEvent('nav-click', {{ detail: {{ key: '{key}' }} }});
+                window.dispatchEvent(event);
+            "
+        >
+            <span>{expand_icon}</span>
+            <span style="display: inline-flex; align-items: center;">{icon}</span>
+            <span>{text}</span>
+        </button>
+    </div>
+    <script>
+        window.addEventListener('nav-click', function(e) {{
+            const key = e.detail.key;
+            // Use Streamlit's query params to trigger action
+            const url = new URL(window.location);
+            url.searchParams.set('nav_action', key);
+            window.location.href = url.toString();
+        }});
+    </script>
+    """
+
+def get_iconly_icon(icon_name: str, size: int = 20, color: str = "currentColor") -> str:
+    """
+    Get Iconly Bold SVG icon as HTML string.
+    
+    Args:
+        icon_name: Name of the icon (e.g., 'Chart', 'Setting', 'Play', 'Stop')
+        size: Size of the icon in pixels
+        color: Color of the icon (default: currentColor)
+        
+    Returns:
+        HTML string with SVG icon
+    """
+    icons = {
+        'Chart': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3V21H21" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16L12 11L16 15L21 10" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 10H16V15" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Setting': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.4 15C19.2669 15.3016 19.2272 15.6362 19.286 15.9606C19.3448 16.285 19.4995 16.5843 19.73 16.82L19.79 16.88C19.976 17.0657 20.1235 17.2863 20.2241 17.5291C20.3248 17.7719 20.3766 18.0322 20.3766 18.295C20.3766 18.5578 20.3248 18.8181 20.2241 19.0609C20.1235 19.3037 19.976 19.5243 19.79 19.71C19.6043 19.896 19.3837 20.0435 19.1409 20.1441C18.8981 20.2448 18.6378 20.2966 18.375 20.2966C18.1122 20.2966 17.8519 20.2448 17.6091 20.1441C17.3663 20.0435 17.1457 19.896 16.96 19.71L16.9 19.65C16.6643 19.4195 16.365 19.2648 16.0406 19.206C15.7162 19.1472 15.3816 19.1869 15.08 19.32C14.7842 19.4468 14.532 19.6572 14.3543 19.9255C14.1766 20.1938 14.0813 20.5082 14.08 20.83V21C14.08 21.5304 13.8693 22.0391 13.4942 22.4142C13.1191 22.7893 12.6104 23 12.08 23C11.5496 23 11.0409 22.7893 10.6658 22.4142C10.2907 22.0391 10.08 21.5304 10.08 21V20.91C10.0723 20.579 9.96512 20.258 9.77251 19.9887C9.5799 19.7194 9.31074 19.5143 9 19.4C8.69838 19.2669 8.36381 19.2272 8.03941 19.286C7.71502 19.3448 7.41568 19.4995 7.18 19.73L7.12 19.79C6.93425 19.976 6.71368 20.1235 6.47088 20.2241C6.22808 20.3248 5.96783 20.3766 5.705 20.3766C5.44217 20.3766 5.18192 20.3248 4.93912 20.2241C4.69632 20.1235 4.47575 19.976 4.29 19.79C4.10405 19.6043 3.95653 19.3837 3.85588 19.1409C3.75523 18.8981 3.70343 18.6378 3.70343 18.375C3.70343 18.1122 3.75523 17.8519 3.85588 17.6091C3.95653 17.3663 4.10405 17.1457 4.29 16.96L4.35 16.9C4.58054 16.6643 4.73519 16.365 4.794 16.0406C4.85282 15.7162 4.81312 15.3816 4.68 15.08C4.55324 14.7842 4.34276 14.532 4.07447 14.3543C3.80618 14.1766 3.49179 14.0813 3.17 14.08H3C2.46957 14.08 1.96086 13.8693 1.58579 13.4942C1.21071 13.1191 1 12.6104 1 12.08C1 11.5496 1.21071 11.0409 1.58579 10.6658C1.96086 10.2907 2.46957 10.08 3 10.08H3.09C3.42099 10.0723 3.742 9.96512 4.0113 9.77251C4.28059 9.5799 4.48572 9.31074 4.6 9C4.73312 8.69838 4.77282 8.36381 4.714 8.03941C4.65519 7.71502 4.50054 7.41568 4.27 7.18L4.21 7.12C4.02405 6.93425 3.87653 6.71368 3.77588 6.47088C3.67523 6.22808 3.62343 5.96783 3.62343 5.705C3.62343 5.44217 3.67523 5.18192 3.77588 4.93912C3.87653 4.69632 4.02405 4.47575 4.21 4.29C4.39575 4.10405 4.61632 3.95653 4.85912 3.85588C5.10192 3.75523 5.36217 3.70343 5.625 3.70343C5.88783 3.70343 6.14808 3.75523 6.39088 3.85588C6.63368 3.95653 6.85425 4.10405 7.04 4.29L7.1 4.35C7.33568 4.58054 7.63502 4.73519 7.95941 4.794C8.28381 4.85282 8.61838 4.81312 8.92 4.68H9C9.29577 4.55324 9.54802 4.34276 9.72569 4.07447C9.90337 3.80618 9.99872 3.49179 10 3.17V3C10 2.46957 10.2107 1.96086 10.5858 1.58579C10.9609 1.21071 11.4696 1 12 1C12.5304 1 13.0391 1.21071 13.4142 1.58579C13.7893 1.96086 14 2.46957 14 3V3.09C14.0013 3.41179 14.0966 3.72618 14.2743 3.99447C14.452 4.26276 14.7042 4.47324 15 4.6C15.3016 4.73312 15.6362 4.77282 15.9606 4.714C16.285 4.65519 16.5843 4.50054 16.82 4.27L16.88 4.21C17.0657 4.02405 17.2863 3.87653 17.5291 3.77588C17.7719 3.67523 18.0322 3.62343 18.295 3.62343C18.5578 3.62343 18.8181 3.67523 19.0609 3.77588C19.3037 3.87653 19.5243 4.02405 19.71 4.21C19.896 4.39575 20.0435 4.61632 20.1441 4.85912C20.2448 5.10192 20.2966 5.36217 20.2966 5.625C20.2966 5.88783 20.2448 6.14808 20.1441 6.39088C20.0435 6.63368 19.896 6.85425 19.71 7.04L19.65 7.1C19.4195 7.33568 19.2648 7.63502 19.206 7.95941C19.1472 8.28381 19.1869 8.61838 19.32 8.92V9C19.4468 9.29577 19.6572 9.54802 19.9255 9.72569C20.1938 9.90337 20.5082 9.99872 20.83 10H21C21.5304 10 22.0391 10.2107 22.4142 10.5858C22.7893 10.9609 23 11.4696 23 12C23 12.5304 22.7893 13.0391 22.4142 13.4142C22.0391 13.7893 21.5304 14 21 14H20.91C20.5882 14.0013 20.2738 14.0966 20.0055 14.2743C19.7372 14.452 19.5268 14.7042 19.4 15Z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Play': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5V19L19 12L8 5Z" fill="{color}"/></svg>',
+        'Stop': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="12" height="12" rx="2" fill="{color}"/></svg>',
+        'Document': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Info': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16V12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8H12.01" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Home': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 22V12H15V22" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Search': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 21L16.65 16.65" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Tick': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17L4 12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Close': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Activity': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 12H18L15 21L9 3L6 12H2" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'Category': f'<svg class="iconly-icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6H20M4 12H20M4 18H20" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    }
+    return icons.get(icon_name, '')
+
 def get_tradingview_widget(symbol: str, height: int = 500) -> str:
     """
     Generate TradingView widget HTML for embedding.
@@ -1196,7 +1288,7 @@ You'll receive instant alerts when strong trading signals are detected.
 
 def show_settings_page():
     """Display settings configuration page."""
-    st.title("⚙️ Settings")
+    st.markdown(f'<h1>{get_iconly_icon("Setting", 24, "#00d9ff")} Settings</h1>', unsafe_allow_html=True)
     
     settings = load_settings()
     
@@ -1402,7 +1494,7 @@ def show_settings_page():
 
 def show_dashboard_page():
     """Display unified trading dashboard with controls and asset selector."""
-    st.title("🥝 Kiwi AI Trading Dashboard")
+    st.markdown(f'<h1>{get_iconly_icon("Activity", 24, "#00d9ff")} Kiwi AI Trading Dashboard</h1>', unsafe_allow_html=True)
     
     settings = load_settings()
     
@@ -1546,36 +1638,40 @@ def show_dashboard_page():
             </style>
             """, unsafe_allow_html=True)
             
-            if st.button("🛑 Stop Trading", use_container_width=True, type="secondary"):
-                try:
-                    # First stop the trading flag
-                    trading_state.running = False
-                    logger.logger.info("🛑 Stopping trading system...")
-                    
-                    # Close WebSocket connection with proper cleanup
-                    if trading_state.stream is not None:
-                        try:
-                            logger.logger.info("🔌 Closing WebSocket connection...")
-                            trading_state.stream.stop()
-                            time.sleep(3)  # Give more time for proper cleanup
-                            trading_state.stream = None
-                            logger.logger.info("✅ WebSocket closed successfully")
-                        except Exception as e:
-                            logger.logger.warning(f"Warning closing WebSocket: {e}")
-                            trading_state.stream = None
-                    
-                    # Wait for thread to finish
-                    if trading_state.thread is not None:
-                        trading_state.thread.join(timeout=5)
-                        trading_state.thread = None
-                    
-                    st.success("✅ Trading stopped! Waiting 5 seconds before allowing restart...")
-                    logger.logger.info("Trading stopped via UI")
-                    time.sleep(5)  # Prevent immediate restart
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
-                    logger.logger.error(f"Error stopping trading: {e}")
+            icon_col, btn_col = st.columns([0.1, 0.9])
+            with icon_col:
+                st.markdown(get_iconly_icon("Stop", 18, "#ffffff"), unsafe_allow_html=True)
+            with btn_col:
+                if st.button("Stop Trading", use_container_width=True, type="secondary"):
+                    try:
+                        # First stop the trading flag
+                        trading_state.running = False
+                        logger.logger.info("🛑 Stopping trading system...")
+                        
+                        # Close WebSocket connection with proper cleanup
+                        if trading_state.stream is not None:
+                            try:
+                                logger.logger.info("🔌 Closing WebSocket connection...")
+                                trading_state.stream.stop()
+                                time.sleep(3)  # Give more time for proper cleanup
+                                trading_state.stream = None
+                                logger.logger.info("✅ WebSocket closed successfully")
+                            except Exception as e:
+                                logger.logger.warning(f"Warning closing WebSocket: {e}")
+                                trading_state.stream = None
+                        
+                        # Wait for thread to finish
+                        if trading_state.thread is not None:
+                            trading_state.thread.join(timeout=5)
+                            trading_state.thread = None
+                        
+                        st.success("✅ Trading stopped! Waiting 5 seconds before allowing restart...")
+                        logger.logger.info("Trading stopped via UI")
+                        time.sleep(5)  # Prevent immediate restart
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+                        logger.logger.error(f"Error stopping trading: {e}")
         else:
             # Start button with refined Apple-style design
             st.markdown("""
@@ -1599,37 +1695,41 @@ def show_dashboard_page():
             </style>
             """, unsafe_allow_html=True)
             
-            if st.button("🚀 Start Trading", use_container_width=True, type="primary"):
-                # Check if there's already an active stream
-                if trading_state.stream is not None:
-                    st.warning("⚠️ Cleaning up existing connection first...")
-                    try:
-                        trading_state.stream.stop()
-                        time.sleep(3)
-                        trading_state.stream = None
-                    except:
-                        pass
-                
-                st.info("🚀 Starting Real-Time Trading System...")
-                try:
-                    trading_state.running = True
-                    trading_state.mode = 'realtime'
-                    
-                    def run_realtime():
+            icon_col, btn_col = st.columns([0.1, 0.9])
+            with icon_col:
+                st.markdown(get_iconly_icon("Play", 18, "#ffffff"), unsafe_allow_html=True)
+            with btn_col:
+                if st.button("Start Trading", use_container_width=True, type="primary"):
+                    # Check if there's already an active stream
+                    if trading_state.stream is not None:
+                        st.warning("⚠️ Cleaning up existing connection first...")
                         try:
-                            run_realtime_trading(settings)
-                        except Exception as e:
-                            log_error('Real-Time Mode', 'Critical error', e, {'settings': str(settings)})
-                            trading_state.running = False
+                            trading_state.stream.stop()
+                            time.sleep(3)
+                            trading_state.stream = None
+                        except:
+                            pass
                     
-                    trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
-                    trading_state.thread.start()
-                    logger.logger.info("Real-time mode started")
-                    time.sleep(2)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Failed to start: {e}")
-                    logger.logger.error(f"Failed to start trading: {e}")
+                    st.info("🚀 Starting Real-Time Trading System...")
+                    try:
+                        trading_state.running = True
+                        trading_state.mode = 'realtime'
+                        
+                        def run_realtime():
+                            try:
+                                run_realtime_trading(settings)
+                            except Exception as e:
+                                log_error('Real-Time Mode', 'Critical error', e, {'settings': str(settings)})
+                                trading_state.running = False
+                        
+                        trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
+                        trading_state.thread.start()
+                        logger.logger.info("Real-time mode started")
+                        time.sleep(2)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Failed to start: {e}")
+                        logger.logger.error(f"Failed to start trading: {e}")
     
     # Get current asset info
     selected_symbol = settings.get('trading_symbol', 'SPY')
@@ -1842,7 +1942,7 @@ def show_dashboard_page():
     
     # Data row - clean display without extra containers
     st.markdown(f"""
-    <div style='background: rgba(255,255,255,0.02); border-radius: 8px; padding: 24px; margin-top: 10px;'>
+    <div style='background: linear-gradient(135deg, rgba(15, 12, 41, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%); border-radius: 16px; padding: 24px; margin-top: 30px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);'>
         <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; align-items: center;'>
             <div style='text-align: center;'>
                 <p style='margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;'>{selected_symbol}</p>
@@ -1867,6 +1967,9 @@ def show_dashboard_page():
     # Show detailed view BELOW the table if any button was clicked
     if any([st.session_state.show_asset_details, st.session_state.show_regime_details, 
             st.session_state.show_strategy_details, st.session_state.show_status_details]):
+        
+        # Add explicit spacing before detailed view to separate from AI Intelligence table
+        st.markdown("<div style='height: 40px; width: 100%; clear: both;'></div>", unsafe_allow_html=True)
     
         # Show detailed information based on which button was clicked
         if st.session_state.show_asset_details:
@@ -2220,46 +2323,62 @@ def show_dashboard_page():
         elif st.session_state.show_status_details:
             
             if not trading_state.running:
-                # Professional Status Details - System Stopped
+                # Professional Status Details - System Stopped (Combined with rotation)
                 st.markdown("""
-                <div style='color: #888; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center;'>
-                    ⚪ System Status: Inactive
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("""
-                <div style='background: rgba(108,117,125,0.1); border-radius: 8px; padding: 20px; border: 1px solid rgba(108,117,125,0.3); margin-bottom: 15px;'>
-                    <p style='color: #6c757d; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;'>
-                        ⚪ Trading System Inactive
-                    </p>
-                    <p style='color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;'>
-                        The trading system is currently not running. Start trading to activate AI analysis and signal detection.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # How to Start
-                st.markdown("""
-                <div style='background: rgba(0,217,255,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px;'>
-                    <p style='color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🚀 HOW TO START</p>
-                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
-                        <div style='padding: 5px 0;'><strong>1.</strong> Click the <strong>Start Trading</strong> button above</div>
-                        <div style='padding: 5px 0;'><strong>2.</strong> System will connect to live market data</div>
-                        <div style='padding: 5px 0;'><strong>3.</strong> AI will begin analysis within 1-2 minutes</div>
+                <div id="status-container" style="background: linear-gradient(135deg, rgba(15, 12, 41, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%); border-radius: 16px; padding: 30px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); min-height: 200px; position: relative; overflow: hidden; margin-top: 20px; margin-bottom: 40px;">
+                    <div class="status-section active" style="color: #888; font-size: 18px; font-weight: 700; margin-bottom: 15px; text-align: center; transition: opacity 0.5s ease;">
+                        ⚪ System Status: Inactive
+                    </div>
+                    <div class="status-section" style="background: rgba(108,117,125,0.1); border-radius: 12px; padding: 20px; border: 1px solid rgba(108,117,125,0.3); margin-bottom: 15px; opacity: 0; position: absolute; width: calc(100% - 60px); transition: opacity 0.5s ease; top: 60px; left: 30px;">
+                        <p style="color: #6c757d; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; text-align: center;">⚪ Trading System Inactive</p>
+                        <p style="color: #ffffff; margin: 0; font-size: 14px; text-align: center; line-height: 1.6;">The trading system is currently not running. Start trading to activate AI analysis and signal detection.</p>
+                    </div>
+                    <div class="status-section" style="background: rgba(0,217,255,0.1); border-radius: 12px; padding: 20px; border: 1px solid rgba(0,217,255,0.3); margin-bottom: 15px; opacity: 0; position: absolute; width: calc(100% - 60px); transition: opacity 0.5s ease; top: 60px; left: 30px;">
+                        <p style="color: #00d9ff; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; text-align: center;">🚀 HOW TO START</p>
+                        <div style="color: #ffffff; font-size: 14px; line-height: 1.8;">
+                            <div style="padding: 8px 0;"><strong>1.</strong> Click the <strong>Start Trading</strong> button above</div>
+                            <div style="padding: 8px 0;"><strong>2.</strong> System will connect to live market data</div>
+                            <div style="padding: 8px 0;"><strong>3.</strong> AI will begin analysis within 1-2 minutes</div>
+                        </div>
+                    </div>
+                    <div class="status-section" style="background: rgba(76,175,80,0.1); border-radius: 12px; padding: 20px; border: 1px solid rgba(76,175,80,0.3); opacity: 0; position: absolute; width: calc(100% - 60px); transition: opacity 0.5s ease; top: 60px; left: 30px;">
+                        <p style="color: #4caf50; font-size: 16px; font-weight: 600; margin: 0 0 15px 0; text-align: center;">🛡️ SAFETY FEATURES</p>
+                        <div style="color: #ffffff; font-size: 14px; line-height: 1.8;">
+                            <div style="padding: 8px 0;">✅ Paper trading enabled by default</div>
+                            <div style="padding: 8px 0;">✅ Risk management active</div>
+                            <div style="padding: 8px 0;">✅ Stop-loss protection ready</div>
+                        </div>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
-                
-                # Safety Features
-                st.markdown("""
-                <div style='background: rgba(76,175,80,0.1); border-radius: 8px; padding: 15px; border: 1px solid rgba(76,175,80,0.3);'>
-                    <p style='color: #4caf50; font-size: 14px; font-weight: 600; margin: 0 0 10px 0;'>🛡️ SAFETY FEATURES</p>
-                    <div style='color: #ffffff; font-size: 13px; line-height: 1.8;'>
-                        <div style='padding: 5px 0;'>✅ Paper trading enabled by default</div>
-                        <div style='padding: 5px 0;'>✅ Risk management active</div>
-                        <div style='padding: 5px 0;'>✅ Stop-loss protection ready</div>
-                    </div>
-                </div>
+                <script>
+                (function() {
+                    const container = document.getElementById('status-container');
+                    if (!container) return;
+                    const sections = container.querySelectorAll('.status-section');
+                    let currentIndex = 0;
+                    sections.forEach((section, index) => {
+                        if (index === 0) {
+                            section.style.opacity = '1';
+                            section.style.position = 'relative';
+                        } else {
+                            section.style.opacity = '0';
+                            section.style.position = 'absolute';
+                            section.style.top = '60px';
+                            section.style.left = '30px';
+                        }
+                    });
+                    function rotateStatus() {
+                        sections[currentIndex].style.opacity = '0';
+                        sections[currentIndex].style.position = 'absolute';
+                        sections[currentIndex].style.top = '60px';
+                        sections[currentIndex].style.left = '30px';
+                        currentIndex = (currentIndex + 1) % sections.length;
+                        sections[currentIndex].style.opacity = '1';
+                        sections[currentIndex].style.position = 'relative';
+                    }
+                    setInterval(rotateStatus, 7000);
+                })();
+                </script>
                 """, unsafe_allow_html=True)
             elif trading_state.current_regime == "Initializing...":
                 # Professional Status Details - Initializing (Static Display)
@@ -2823,41 +2942,45 @@ def show_control_page():
         col1, col2, col3 = st.columns([1, 1, 2])
         
         with col1:
-            if st.button("🛑 Stop Trading", use_container_width=True, type="secondary"):
-                try:
-                    trading_state.running = False
-                    
-                    # Close WebSocket connection if exists
-                    if trading_state.stream is not None:
-                        try:
-                            logger.logger.info("🔌 Closing WebSocket connection...")
-                            trading_state.stream.stop()
-                            time.sleep(1)  # Give time to properly close
-                            trading_state.stream = None
-                            logger.logger.info("✅ WebSocket closed")
-                        except Exception as e:
-                            logger.logger.warning(f"Warning closing WebSocket: {e}")
-                            trading_state.stream = None
-                    
-                    if trading_state.broker:
-                        try:
-                            # Close all positions on stop
-                            close_all = st.checkbox("Close all positions when stopping?", value=False)
-                            if close_all:
-                                trading_state.broker.close_all_positions()
-                                st.info("✅ All positions closed")
-                                logger.logger.info("All positions closed on stop")
-                        except Exception as e:
-                            st.error(f"Error closing positions: {e}")
-                            log_error('Position Management', 'Error closing positions on stop', e)
-                    
-                    st.success("✅ Trading stopped!")
-                    logger.logger.info("Trading stopped via UI")
-                    time.sleep(1)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error stopping trading: {e}")
-                    log_error('Control', 'Error stopping trading', e)
+            icon_col, btn_col = st.columns([0.1, 0.9])
+            with icon_col:
+                st.markdown(get_iconly_icon("Stop", 18, "#ffffff"), unsafe_allow_html=True)
+            with btn_col:
+                if st.button("Stop Trading", use_container_width=True, type="secondary"):
+                    try:
+                        trading_state.running = False
+                        
+                        # Close WebSocket connection if exists
+                        if trading_state.stream is not None:
+                            try:
+                                logger.logger.info("🔌 Closing WebSocket connection...")
+                                trading_state.stream.stop()
+                                time.sleep(1)  # Give time to properly close
+                                trading_state.stream = None
+                                logger.logger.info("✅ WebSocket closed")
+                            except Exception as e:
+                                logger.logger.warning(f"Warning closing WebSocket: {e}")
+                                trading_state.stream = None
+                        
+                        if trading_state.broker:
+                            try:
+                                # Close all positions on stop
+                                close_all = st.checkbox("Close all positions when stopping?", value=False)
+                                if close_all:
+                                    trading_state.broker.close_all_positions()
+                                    st.info("✅ All positions closed")
+                                    logger.logger.info("All positions closed on stop")
+                            except Exception as e:
+                                st.error(f"Error closing positions: {e}")
+                                log_error('Position Management', 'Error closing positions on stop', e)
+                        
+                        st.success("✅ Trading stopped!")
+                        logger.logger.info("Trading stopped via UI")
+                        time.sleep(1)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error stopping trading: {e}")
+                        log_error('Control', 'Error stopping trading', e)
     
     st.subheader("⚙️ Current Configuration")
     
@@ -2876,7 +2999,7 @@ def show_control_page():
 
 def show_help_page():
     """Display help and documentation."""
-    st.title("📖 Help & Documentation")
+    st.markdown(f'<h1>{get_iconly_icon("Info", 24, "#00d9ff")} Help & Documentation</h1>', unsafe_allow_html=True)
     
     st.markdown("""
     # 🥝 Kiwi AI Trading System v2.0
@@ -2996,7 +3119,7 @@ def show_help_page():
 
 def show_error_log_page():
     """Display error log viewer."""
-    st.title("🐛 Error & Debug Log")
+    st.markdown(f'<h1>{get_iconly_icon("Search", 24, "#00d9ff")} Error & Debug Log</h1>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([2, 1, 1])
     
@@ -3160,16 +3283,130 @@ def main():
             font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         
+        /* Iconly Icon Styling */
+        .iconly-icon {
+            display: inline-block;
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: middle;
+            margin-right: 6px;
+            fill: currentColor;
+        }
+        
         /* Main App Background with Gradient */
         .stApp {
             background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
             background-attachment: fixed;
         }
         
+        /* Toolbar Styling - Match Background */
+        [data-testid="stToolbar"] {
+            background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%) !important;
+            background-attachment: fixed !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Toolbar Button - Hide or Style */
+        [data-testid="stToolbar"] button,
+        [data-testid="stToolbar"] a {
+            background: transparent !important;
+            color: rgba(255, 255, 255, 0.3) !important;
+            border: none !important;
+        }
+        
+        [data-testid="stToolbar"] button:hover,
+        [data-testid="stToolbar"] a:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        
+        /* Custom Settings Icon in Toolbar */
+        .toolbar-settings-icon {
+            position: absolute;
+            right: 120px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toolbar-settings-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .toolbar-settings-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: rgba(255, 255, 255, 0.6);
+            transition: fill 0.3s ease;
+        }
+        
+        .toolbar-settings-icon:hover svg {
+            fill: #00d9ff;
+        }
+        
+        /* Main Block Container - Match Background */
+        [data-testid="stMainBlockContainer"],
+        .block-container {
+            background: transparent !important;
+        }
+        
         /* Sidebar Styling */
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #1a1a2e 0%, #0f0c29 100%);
             border-right: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 16px;
+            margin: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+        
+        /* Sidebar Content Container */
+        [data-testid="stSidebar"] {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        [data-testid="stSidebar"] > div:first-child {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Navigation content wrapper - takes available space */
+        .sidebar-nav-content {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        /* System Info positioning - stick to absolute bottom */
+        [data-testid="stSidebar"] .system-info-container {
+            margin-top: auto;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Ensure System Info is always at bottom */
+        [data-testid="stSidebar"] .stMarkdown:has(.system-info-container) {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* Spacer to push content to bottom */
+        [data-testid="stSidebar"] .stMarkdown:has(div[style*="flex: 1"]) {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
         }
         
         [data-testid="stSidebar"] .stMarkdown {
@@ -3586,7 +3823,113 @@ def main():
             border-color: rgba(255, 255, 255, 0.1);
             margin: 20px 0;
         }
+        
+        /* Remove spacing from Streamlit wrapper divs around status sections */
+        #status-container {
+            margin-top: 20px !important;
+            margin-bottom: 40px !important;
+        }
+        
+        /* Ensure proper spacing between AI Intelligence table and status container */
+        div[data-testid="stMarkdown"]:has(#status-container) {
+            margin-top: 20px !important;
+            margin-bottom: 40px !important;
+        }
+        
+        /* Add spacing after AI Intelligence table */
+        div[data-testid="stMarkdown"]:has(div[style*="linear-gradient(135deg, rgba(15, 12, 41, 0.95)"]) {
+            margin-bottom: 40px !important;
+        }
         </style>
+    """, unsafe_allow_html=True)
+    
+    # Add Settings icon to toolbar
+    settings_icon_html = get_iconly_icon("Setting", 20, "rgba(255, 255, 255, 0.6)")
+    st.markdown(f"""
+    <script>
+    (function() {{
+        // Wait for toolbar to be ready
+        function addSettingsIcon() {{
+            const toolbar = document.querySelector('[data-testid="stToolbar"]');
+            if (!toolbar) {{
+                setTimeout(addSettingsIcon, 100);
+                return;
+            }}
+            
+            // Check if icon already exists
+            if (toolbar.querySelector('.toolbar-settings-icon')) {{
+                return;
+            }}
+            
+            // Find the Deploy button
+            const deployButton = toolbar.querySelector('button[kind="header"]');
+            if (!deployButton) {{
+                setTimeout(addSettingsIcon, 100);
+                return;
+            }}
+            
+            // Make toolbar position relative for absolute positioning
+            toolbar.style.position = 'relative';
+            
+            // Create settings icon button
+            const settingsIcon = document.createElement('div');
+            settingsIcon.className = 'toolbar-settings-icon';
+            settingsIcon.innerHTML = `{settings_icon_html}`;
+            settingsIcon.style.position = 'absolute';
+            settingsIcon.style.right = '120px';
+            settingsIcon.style.top = '50%';
+            settingsIcon.style.transform = 'translateY(-50%)';
+            settingsIcon.style.cursor = 'pointer';
+            settingsIcon.style.padding = '8px';
+            settingsIcon.style.borderRadius = '8px';
+            settingsIcon.style.transition = 'all 0.3s ease';
+            settingsIcon.style.zIndex = '1000';
+            settingsIcon.style.display = 'flex';
+            settingsIcon.style.alignItems = 'center';
+            settingsIcon.style.justifyContent = 'center';
+            settingsIcon.title = 'Settings';
+            
+            // Add hover effect
+            settingsIcon.addEventListener('mouseenter', function() {{
+                this.style.background = 'rgba(255, 255, 255, 0.1)';
+                this.style.transform = 'translateY(-50%) scale(1.1)';
+                const svg = this.querySelector('svg');
+                if (svg) {{
+                    svg.style.stroke = '#00d9ff';
+                    svg.style.fill = '#00d9ff';
+                }}
+            }});
+            
+            settingsIcon.addEventListener('mouseleave', function() {{
+                this.style.background = 'transparent';
+                this.style.transform = 'translateY(-50%)';
+                const svg = this.querySelector('svg');
+                if (svg) {{
+                    svg.style.stroke = 'rgba(255, 255, 255, 0.6)';
+                    svg.style.fill = 'rgba(255, 255, 255, 0.6)';
+                }}
+            }});
+            
+            // Add click handler
+            settingsIcon.addEventListener('click', function() {{
+                // Use Streamlit's query params to navigate
+                const url = new URL(window.location);
+                url.searchParams.set('page', 'Settings');
+                window.location.href = url.toString();
+            }});
+            
+            // Insert into toolbar (before Deploy button if it exists, otherwise append)
+            if (deployButton && deployButton.parentNode) {{
+                deployButton.parentNode.insertBefore(settingsIcon, deployButton);
+            }} else {{
+                toolbar.appendChild(settingsIcon);
+            }}
+        }}
+        
+        // Start trying to add icon
+        addSettingsIcon();
+    }})();
+    </script>
     """, unsafe_allow_html=True)
     
     # Sidebar navigation
@@ -3616,6 +3959,9 @@ def main():
             </div>
         """, unsafe_allow_html=True)
         
+        # Wrap navigation content in a flex container
+        st.markdown('<div class="sidebar-nav-content">', unsafe_allow_html=True)
+        
         # Professional Navigation with clickable divs - Collapsible menu
         current_page = st.session_state.current_page
         
@@ -3638,69 +3984,199 @@ def main():
         
         # Dashboard - Main button with expand/collapse
         dashboard_active = current_page in ["Dashboard", "Settings", "Error Log", "Help"]
-        expand_icon = "▼" if st.session_state.dashboard_expanded else "▶"
         
-        # Custom styled button for Dashboard
+        # Prepare SVG icons and escape for JavaScript (removed Overview/Activity icon)
+        chart_icon_svg = get_iconly_icon("Chart", 20, "#00d9ff" if dashboard_active else "#ffffff")
+        search_icon_svg = get_iconly_icon("Search", 18, "#00d9ff" if current_page == "Error Log" else "#ffffff")
+        info_icon_svg = get_iconly_icon("Info", 18, "#00d9ff" if current_page == "Help" else "#ffffff")
+        
+        # Escape SVG for JavaScript (JSON encoding handles all special characters)
+        chart_icon_js = json.dumps(chart_icon_svg)
+        search_icon_js = json.dumps(search_icon_svg)
+        info_icon_js = json.dumps(info_icon_svg)
+        
+        # CSS and JavaScript to inject icons and remove triangles
         st.markdown(f"""
         <style>
-        .dashboard-main-btn {{
-            background: {'linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(76, 175, 254, 0.2))' if dashboard_active else 'rgba(255, 255, 255, 0.05)'};
-            border: 1px solid {'rgba(0, 217, 255, 0.4)' if dashboard_active else 'rgba(255, 255, 255, 0.1)'};
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin: 8px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        /* Style buttons to display icons properly */
+        [data-testid="stSidebar"] .stButton > button {{
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 8px !important;
+            padding-left: 16px !important;
         }}
-        .dashboard-main-btn:hover {{
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(76, 175, 254, 0.15));
-            border-color: rgba(0, 217, 255, 0.3);
-            transform: translateX(4px);
-        }}
-        .dashboard-main-text {{
-            color: {'#00d9ff' if dashboard_active else '#ffffff'};
-            font-weight: 600;
-            font-size: 15px;
-        }}
-        .dashboard-expand-icon {{
-            color: {'#00d9ff' if dashboard_active else 'rgba(255, 255, 255, 0.5)'};
-            font-size: 14px;
-        }}
-        .sub-menu-item {{
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 3px solid rgba(0, 217, 255, 0.3);
-            border-radius: 6px;
-            padding: 10px 16px;
-            margin: 4px 0 4px 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }}
-        .sub-menu-item:hover {{
-            background: rgba(0, 217, 255, 0.1);
-            border-left-color: rgba(0, 217, 255, 0.6);
-            transform: translateX(4px);
-        }}
-        .sub-menu-item.active {{
-            background: rgba(0, 217, 255, 0.15);
-            border-left-color: #00d9ff;
-        }}
-        .sub-menu-text {{
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 500;
-        }}
-        .sub-menu-text.active {{
-            color: #00d9ff;
-            font-weight: 600;
+        
+        /* Ensure SVG icons are visible and properly sized */
+        [data-testid="stSidebar"] button svg.iconly-icon {{
+            width: 20px !important;
+            height: 20px !important;
+            flex-shrink: 0 !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-right: 0 !important;
         }}
         </style>
+        <script>
+        (function() {{
+            const chartIcon = {chart_icon_js};
+            const searchIcon = {search_icon_js};
+            const infoIcon = {info_icon_js};
+            
+            function injectIcon(button, iconHtml, buttonText) {{
+                // Check if icon already exists
+                if (button.querySelector('svg.iconly-icon')) {{
+                    return; // Icon already injected
+                }}
+                
+                // Remove triangle characters from button text
+                const walker = document.createTreeWalker(
+                    button,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                
+                let textNode;
+                while (textNode = walker.nextNode()) {{
+                    if (textNode.textContent.includes('▼') || textNode.textContent.includes('▶')) {{
+                        textNode.textContent = textNode.textContent.replace(/[▼▶]/g, '').trim();
+                    }}
+                }}
+                
+                // Create a wrapper to parse the SVG
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = iconHtml;
+                const svg = tempDiv.querySelector('svg');
+                
+                if (svg) {{
+                    // Ensure the SVG has the iconly-icon class
+                    svg.classList.add('iconly-icon');
+                    
+                    // Insert SVG as the first child
+                    if (button.firstChild) {{
+                        button.insertBefore(svg, button.firstChild);
+                    }} else {{
+                        button.appendChild(svg);
+                    }}
+                    
+                    // Ensure flex layout
+                    button.style.display = 'flex';
+                    button.style.alignItems = 'center';
+                    button.style.gap = '8px';
+                }}
+            }}
+            
+            function injectIcons() {{
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar) return;
+                
+                // Find all buttons in sidebar - try multiple selectors
+                const allButtons = sidebar.querySelectorAll(
+                    '.stButton > button, ' +
+                    'button[data-testid*="baseButton"], ' +
+                    'button[data-testid*="stBaseButton"], ' +
+                    '[data-testid="stSidebar"] button'
+                );
+                
+                allButtons.forEach(btn => {{
+                    // Skip if button is not visible or already has icon
+                    if (!btn.offsetParent || btn.querySelector('svg.iconly-icon')) {{
+                        return;
+                    }}
+                    
+                    const text = btn.textContent.trim();
+                    const innerText = btn.innerText.trim();
+                    
+                    // Dashboard button - check both textContent and innerText
+                    if ((text.includes('Dashboard') || innerText.includes('Dashboard')) && 
+                        !text.includes('Overview') && !innerText.includes('Overview')) {{
+                        injectIcon(btn, chartIcon, 'Dashboard');
+                    }}
+                    // Error Log button
+                    else if (text === 'Error Log' || innerText === 'Error Log') {{
+                        injectIcon(btn, searchIcon, 'Error Log');
+                    }}
+                    // Help button
+                    else if (text === 'Help' || innerText === 'Help') {{
+                        injectIcon(btn, infoIcon, 'Help');
+                    }}
+                }});
+            }}
+            
+            // Run immediately
+            injectIcons();
+            
+            // Run on DOM ready
+            if (document.readyState === 'loading') {{
+                document.addEventListener('DOMContentLoaded', injectIcons);
+            }}
+            
+            // Watch for changes - more aggressive
+            let lastRun = 0;
+            const observer = new MutationObserver(() => {{
+                const now = Date.now();
+                if (now - lastRun > 50) {{ // Throttle to every 50ms
+                    lastRun = now;
+                    setTimeout(injectIcons, 10);
+                }}
+            }});
+            
+            observer.observe(document.body, {{
+                childList: true,
+                subtree: true,
+                characterData: true
+            }});
+            
+            // Also run periodically as backup
+            setInterval(injectIcons, 500);
+        }})();
+        
+        // Ensure System Info is at absolute bottom
+        (function() {{
+            function positionSystemInfo() {{
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                if (!sidebar) return;
+                
+                const systemInfo = sidebar.querySelector('.system-info-container');
+                if (systemInfo) {{
+                    const sidebarContent = sidebar.querySelector('> div:first-child');
+                    if (sidebarContent) {{
+                        sidebarContent.style.display = 'flex';
+                        sidebarContent.style.flexDirection = 'column';
+                        sidebarContent.style.height = '100vh';
+                        sidebarContent.style.minHeight = '100vh';
+                    }}
+                    
+                    // Find the markdown container and ensure it's at bottom
+                    let markdownContainer = systemInfo.closest('.stMarkdown');
+                    if (markdownContainer) {{
+                        markdownContainer.style.marginTop = 'auto';
+                        markdownContainer.style.flexShrink = '0';
+                        markdownContainer.style.marginBottom = '0';
+                    }}
+                    
+                    // Ensure System Info itself has rounded corners
+                    systemInfo.style.borderRadius = '0 0 16px 16px';
+                }}
+            }}
+            
+            if (document.readyState === 'loading') {{
+                document.addEventListener('DOMContentLoaded', positionSystemInfo);
+            }} else {{
+                positionSystemInfo();
+            }}
+            
+            const observer = new MutationObserver(() => {{
+                setTimeout(positionSystemInfo, 100);
+            }});
+            observer.observe(document.body, {{ childList: true, subtree: true }});
+        }})();
+        </script>
         """, unsafe_allow_html=True)
         
-        # Dashboard main button - toggle expand/collapse
-        if st.button(f"{expand_icon}  📊 Dashboard", key="nav_dashboard_main", use_container_width=True, 
+        # Dashboard main button - triangle removed from text
+        if st.button("Dashboard", key="nav_dashboard_main", use_container_width=True, 
                      type="primary" if dashboard_active else "secondary"):
             st.session_state.dashboard_expanded = not st.session_state.dashboard_expanded
             # If clicking on dashboard, set to Dashboard page
@@ -3710,87 +4186,56 @@ def main():
         
         # Show sub-menu items when expanded
         if st.session_state.dashboard_expanded:
-            # Dashboard Overview
-            col1, col2 = st.columns([0.1, 0.9])
-            with col2:
-                dashboard_selected = current_page == "Dashboard"
-                if st.button("📈 Overview", key="nav_dashboard_overview", use_container_width=True,
-                           type="primary" if dashboard_selected else "secondary"):
-                    st.session_state.current_page = "Dashboard"
-                    st.rerun()
-            
-            # Settings
-            col1, col2 = st.columns([0.1, 0.9])
-            with col2:
-                settings_selected = current_page == "Settings"
-                if st.button("⚙️ Settings", key="nav_settings_sub", use_container_width=True,
-                           type="primary" if settings_selected else "secondary"):
-                    st.session_state.current_page = "Settings"
-                    st.rerun()
-            
             # Error Log
-            col1, col2 = st.columns([0.1, 0.9])
-            with col2:
-                error_log_selected = current_page == "Error Log"
-                if st.button("🔍 Error Log", key="nav_error_log_sub", use_container_width=True,
-                           type="primary" if error_log_selected else "secondary"):
-                    st.session_state.current_page = "Error Log"
-                    st.rerun()
+            error_log_selected = current_page == "Error Log"
+            if st.button("Error Log", key="nav_error_log_sub", use_container_width=True,
+                       type="primary" if error_log_selected else "secondary"):
+                st.session_state.current_page = "Error Log"
+                st.rerun()
             
             # Help
-            col1, col2 = st.columns([0.1, 0.9])
-            with col2:
-                help_selected = current_page == "Help"
-                if st.button("❓ Help", key="nav_help_sub", use_container_width=True,
-                           type="primary" if help_selected else "secondary"):
-                    st.session_state.current_page = "Help"
-                    st.rerun()
+            help_selected = current_page == "Help"
+            if st.button("Help", key="nav_help_sub", use_container_width=True,
+                       type="primary" if help_selected else "secondary"):
+                st.session_state.current_page = "Help"
+                st.rerun()
+        
+        # Close navigation content wrapper
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # System Info at bottom of sidebar - Professional display
+        # Get trading status
+        trading_status = "🟢 Running" if trading_state.running else "⚪ Stopped"
+        status_color = "#00ff88" if trading_state.running else "#ff6b6b"
+        
+        # Add spacer to push System Info to bottom
+        st.markdown('<div style="flex: 1;"></div>', unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div class="system-info-container" style="
+            padding: 20px 16px;
+            margin-bottom: 10px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(180deg, transparent 0%, rgba(15, 12, 41, 0.8) 100%);
+            border-radius: 0 0 16px 16px;
+            flex-shrink: 0;
+        ">
+            <div style="margin-bottom: 8px;">
+                <p style="color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0;">Kiwi AI</p>
+                <p style="color: #b0b0b0; font-size: 11px; margin: 4px 0 0 0;">Trading System</p>
+            </div>
+            <div style="margin-top: 12px;">
+                <p style="color: #808080; font-size: 10px; margin: 4px 0;">Version 2.5.2</p>
+                <p style="color: {status_color}; font-size: 11px; font-weight: 500; margin: 6px 0 0 0;">{trading_status}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Update page variable for routing
         page = st.session_state.current_page
-        
-        # System info with professional styling
-        st.markdown("### System Info")
-        settings = load_settings()
-        
-        # Status indicator with animation
-        status_class = "status-running" if trading_state.running else "status-stopped"
-        status_text = "LIVE" if trading_state.running else "STOPPED"
-        status_icon = "🔴" if trading_state.running else "⚪"
-        
-        # Always show REAL-TIME mode
-        mode_display = "REAL-TIME"
-        
-        # Get current trading symbol
-        current_symbol = settings.get('trading_symbol', 'SPY')
-        
-        st.markdown(f"""
-            <div style='padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; margin: 10px 0;'>
-                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>VERSION</span>
-                    <span style='color: #ffffff; font-weight: 600;'>2.0.0</span>
-                </div>
-                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>MODE</span>
-                    <span style='color: #00d9ff; font-weight: 600;'>{mode_display}</span>
-                </div>
-                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>ASSET</span>
-                    <span style='color: #ffffff; font-weight: 600;'>{current_symbol}</span>
-                </div>
-                <div style='display: flex; justify-content: space-between; margin-bottom: 8px;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>ACCOUNT</span>
-                    <span style='color: #00d9ff; font-weight: 600;'>{'PAPER' if settings['is_paper_trading'] else 'LIVE'}</span>
-                </div>
-                <div style='display: flex; justify-content: space-between; align-items: center;'>
-                    <span style='color: #b0b0b0; font-size: 12px;'>STATUS</span>
-                    <span style='font-weight: 600; font-size: 14px;'>{status_icon} {status_text}</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
     
-    # End of sidebar - NO additional content should appear below
-    # All navigation is within the collapsible Dashboard menu
+    # End of sidebar
     
     # Route to appropriate page
     if page == "Dashboard":

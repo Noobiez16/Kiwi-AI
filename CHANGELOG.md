@@ -17,6 +17,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.3] - 2025-11-10 - **STATUS SECTION ENHANCEMENT** ✨🔄
+
+### 🎨 UI/UX Improvements
+
+#### Unified Status Container with Auto-Rotation
+The Status section has been completely redesigned into a single professional container that automatically rotates through different information every 7 seconds, providing a cleaner and more focused user experience.
+
+**Key Features:**
+- **Single Container Design** - All status information combined into one cohesive card
+- **7-Second Auto-Rotation** - Automatically cycles through 4 status sections:
+  1. System Status: Inactive
+  2. Trading System Inactive (with description)
+  3. HOW TO START (3-step guide)
+  4. SAFETY FEATURES (3 key features)
+- **Smooth Fade Transitions** - 0.5s opacity transitions between sections
+- **Professional Gradient Background** - Matching the AI Intelligence table styling
+- **Consistent Visual Design** - Both status container and AI Intelligence table now share the same gradient theme
+
+#### Visual Consistency Improvements
+- **Matching Styling** - AI Intelligence table now uses the same gradient background as status container
+  - Gradient: `linear-gradient(135deg, rgba(15, 12, 41, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%)`
+  - Border: `1px solid rgba(255, 255, 255, 0.1)`
+  - Shadow: `0 8px 32px rgba(0, 0, 0, 0.4)`
+  - Border radius: `16px`
+- **Proper Spacing** - Added 40px spacing between status container and AI Intelligence table
+- **Fixed HTML Rendering** - Resolved issues with HTML displaying as raw text
+
+### 🔧 Technical Implementation
+
+#### Status Rotation System
+```javascript
+// Auto-rotates through 4 sections every 7 seconds
+- Section 1: System Status: Inactive (default visible)
+- Section 2: Trading System Inactive (fades in after 7s)
+- Section 3: HOW TO START (fades in after 14s)
+- Section 4: SAFETY FEATURES (fades in after 21s)
+- Cycle repeats every 28 seconds
+```
+
+#### CSS Enhancements
+- Added explicit spacing divs (40px height) between sections
+- CSS rules to handle Streamlit wrapper div spacing
+- Proper margin management for consistent layout
+- Fixed quote escaping issues in HTML rendering
+
+### 📊 User Experience Benefits
+
+**Before:**
+- Multiple separate divs displayed simultaneously
+- Information overload with all sections visible
+- Inconsistent styling between components
+- Close spacing causing visual clutter
+
+**After:**
+- Single focused container showing one section at a time
+- Automatic rotation keeps information fresh
+- Consistent professional gradient styling throughout
+- Proper spacing creates clear visual hierarchy
+- Smooth animations enhance user engagement
+
+### 🎯 Design Philosophy
+- **Progressive Disclosure** - Show one piece of information at a time
+- **Visual Consistency** - Matching gradient themes create cohesive design
+- **Automatic Updates** - No user interaction needed to see all information
+- **Professional Polish** - Smooth animations and consistent spacing
+
+### 📝 Files Updated
+- `run_kiwi.py` - Status section redesign (lines 2322-2379)
+  - Combined 4 separate divs into single rotating container
+  - Added JavaScript rotation logic (7-second intervals)
+  - Updated AI Intelligence table styling to match
+  - Added spacing and CSS improvements
+
+---
+
 ## [2.5.2] - 2025-11-10 - **COMPLETE VISUAL CLEANUP** ✨🧹
 
 ### 🎨 UI/UX Improvements

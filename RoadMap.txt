@@ -65,8 +65,7 @@ OBJECTIVE: Maximize speed, accuracy, and efficiency to minimize user risk. Intro
 │   ├── Dockerfile                       # Docker container configuration
 │   ├── docker-compose.yml               # Multi-container orchestration
 │   ├── kiwi-ai.service                  # Systemd service file
-│   ├── start_kiwi.bat                   # Windows startup script
-│   └── stop_kiwi.bat                    # Windows shutdown script
+│   └── run.sh                           # Linux/Mac startup script
 │
 ├── 📚 DOCUMENTATION
 │   ├── README.md                        # Project documentation

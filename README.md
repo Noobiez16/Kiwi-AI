@@ -21,13 +21,11 @@ Kiwi AI is designed to overcome the limitations of static trading models by:
 Everything is now consolidated into **`run_kiwi.py`** - a visual, user-friendly application!
 
 ```bash
-# Windows: Use the startup script (Recommended)
-start_kiwi.bat
+# Linux/Mac: Use the startup script (Recommended)
+./run.sh
 
 # Or manually:
-python run_kiwi.py
-
-# Or with streamlit directly:
+source venv/bin/activate
 streamlit run run_kiwi.py
 ```
 
@@ -36,14 +34,10 @@ streamlit run run_kiwi.py
 ### 🛑 Stopping the Application
 
 ```bash
-# Windows: Use the stop script (Recommended)
-stop_kiwi.bat
-
-# Or manually:
 # Press Ctrl+C in the terminal, then close all browser tabs
 ```
 
-**⚠️ Important:** Always use the stop script or stop button to properly close WebSocket connections!
+**⚠️ Important:** Always use Ctrl+C to properly close WebSocket connections before restarting!
 
 ### ✨ No Coding Required!
 
@@ -68,13 +62,26 @@ The app includes a **visual settings manager** - configure everything through th
 - **Risk Management** - Built-in safety features
 - **Paper Trading** - Test with fake money first (default enabled)
 
-## 🏁 Current Status: v2.5.2 Complete ✅
+## 🏁 Current Status: v2.5.3 Complete ✅
 
-**Latest Update:** November 10, 2025 - Complete Visual Cleanup!
+**Latest Update:** November 10, 2025 - Status Section Enhancement!
 
 📄 **[View All Phases Completion Report](ALL_PHASES_COMPLETED.md)** | 📝 **[View Full Changelog](CHANGELOG.md)** | 🚀 **[Deployment Guide](DEPLOYMENT.md)**
 
-### ✨ v2.5.2 Features - Complete Visual Cleanup 🆕
+### ✨ v2.5.3 Features - Status Section Enhancement 🆕
+
+#### 🔄 Unified Status Container with Auto-Rotation
+- **Single Professional Container** - All status information combined into one cohesive card
+- **7-Second Auto-Rotation** - Automatically cycles through 4 status sections:
+  - System Status: Inactive
+  - Trading System Inactive (with description)
+  - HOW TO START (3-step guide)
+  - SAFETY FEATURES (3 key features)
+- **Smooth Fade Transitions** - 0.5s opacity transitions between sections
+- **Matching Visual Design** - AI Intelligence table now uses same gradient styling
+- **Proper Spacing** - 40px spacing between components for clear visual hierarchy
+
+### ✨ v2.5.2 Features - Complete Visual Cleanup
 
 #### ✨ Minimalist Apple-Style Design
 - **Zero Separator Lines** - Removed all 32 horizontal dividers across entire application
@@ -595,8 +602,8 @@ INITIAL_CAPITAL="100000"
 
 ## 📊 Project Status
 
-**Current Version:** 2.5.2 🆕  
-**Latest Update:** November 10, 2025 - Complete Visual Cleanup  
+**Current Version:** 2.5.3 🆕  
+**Latest Update:** November 10, 2025 - Status Section Enhancement  
 **Phase 1 Completion:** October 17, 2025  
 **Phase 2 Completion:** October 18, 2025  
 **Phase 3 Completion:** October 18, 2025  
@@ -611,6 +618,7 @@ INITIAL_CAPITAL="100000"
 **v2.5.0 Release:** November 9, 2025 (AI 5-Minute Market Analysis)  
 **v2.5.1 Release:** November 9, 2025 (Unified Status Table)  
 **v2.5.2 Release:** November 10, 2025 (Complete Visual Cleanup - Minimalist Design)  
+**v2.5.3 Release:** November 10, 2025 (Status Section Enhancement - Auto-Rotation)  
 **Total Lines of Code:** 11,400+  
 **Test Coverage:** 100% for all phases  
 **Strategies Implemented:** 3  
@@ -626,8 +634,8 @@ INITIAL_CAPITAL="100000"
 **AI Learning:** User feedback loop with signal suppression (15-min cooldown)  
 **Interactive Table:** Clickable headers with professional card-based detail views  
 **AI Analysis:** Real-time 5-minute market analysis with buy/sell recommendations  
-**Status Display:** Unified table format with 6 color-coded information rows  
-**Visual Design:** Clean minimalist interface with zero separator lines (32 removed)  
+**Status Display:** Unified rotating container with 7-second auto-rotation through 4 sections  
+**Visual Design:** Clean minimalist interface with zero separator lines (32 removed) + consistent gradient styling  
 **Status:** ✅ Production Ready - Intelligent Trading with Live AI Market Analysis & Risk Management
 
 ## 🤝 Contributing
@@ -670,4 +678,4 @@ SOFTWARE.
 
 **Built with 💚 by the Kiwi AI Team**
 
-Last Updated: November 10, 2025
+Last Updated: November 10, 2025 (v2.5.3)
