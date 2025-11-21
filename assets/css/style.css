@@ -1,0 +1,647 @@
+/* Import Professional Font */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Global Styles */
+* {
+    font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+}
+
+/* Code Font */
+code,
+pre,
+.stCodeBlock {
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Iconly Icon Styling */
+.iconly-icon {
+    display: inline-block;
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+    margin-right: 6px;
+    fill: currentColor;
+}
+
+/* Main App Background with Gradient */
+.stApp {
+    background: radial-gradient(circle at 10% 20%, rgb(22, 33, 62) 0%, rgb(15, 12, 41) 90%);
+    background-attachment: fixed;
+}
+
+/* Hide Streamlit Decoration Bar */
+[data-testid="stDecoration"] {
+    display: none;
+}
+
+/* Toolbar Styling - Match Background */
+[data-testid="stToolbar"] {
+    background: transparent !important;
+    right: 2rem;
+}
+
+/* Toolbar Button - Hide or Style */
+[data-testid="stToolbar"] button,
+[data-testid="stToolbar"] a {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    backdrop-filter: blur(10px);
+}
+
+[data-testid="stToolbar"] button:hover,
+[data-testid="stToolbar"] a:hover {
+    background: rgba(0, 217, 255, 0.1) !important;
+    color: #00d9ff !important;
+    border-color: rgba(0, 217, 255, 0.3) !important;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+}
+
+/* Custom Settings Icon in Toolbar */
+.toolbar-settings-icon {
+    position: absolute;
+    right: 120px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.toolbar-settings-icon:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: rgba(0, 217, 255, 0.3);
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+}
+
+.toolbar-settings-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: rgba(255, 255, 255, 0.6);
+    transition: fill 0.3s ease;
+}
+
+.toolbar-settings-icon:hover svg {
+    fill: #00d9ff;
+}
+
+/* Main Block Container */
+[data-testid="stMainBlockContainer"],
+.block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 5rem !important;
+    max-width: 1200px;
+}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background: rgba(15, 12, 41, 0.7);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 5px 0 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar Content Container */
+[data-testid="stSidebar"] {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+[data-testid="stSidebar"]>div:first-child {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Navigation content wrapper */
+.sidebar-nav-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 0 10px;
+}
+
+/* System Info positioning */
+[data-testid="stSidebar"] .system-info-container {
+    margin-top: auto;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+
+/* Ensure System Info is always at bottom */
+[data-testid="stSidebar"] .stMarkdown:has(.system-info-container) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Spacer to push content to bottom */
+[data-testid="stSidebar"] .stMarkdown:has(div[style*="flex: 1"]) {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+}
+
+[data-testid="stSidebar"] .stMarkdown {
+    color: #e0e0e0;
+}
+
+/* Logo Area */
+[data-testid="stSidebar"] img {
+    border-radius: 12px;
+    filter: drop-shadow(0 0 15px rgba(0, 217, 255, 0.3));
+    transition: transform 0.3s ease;
+}
+
+[data-testid="stSidebar"] img:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 25px rgba(0, 217, 255, 0.5));
+}
+
+/* Navigation Radio Buttons */
+.stRadio>div {
+    gap: 8px;
+}
+
+.stRadio>div>label {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.stRadio>div>label:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: rgba(0, 217, 255, 0.3);
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.1);
+}
+
+.stRadio>div>label[data-selected="true"] {
+    background: linear-gradient(90deg, rgba(0, 217, 255, 0.15) 0%, rgba(0, 217, 255, 0.05) 100%);
+    border-color: #00d9ff;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), inset 3px 0 0 #00d9ff;
+}
+
+/* Metric Cards with Glass Effect */
+[data-testid="stMetricValue"] {
+    font-size: 2.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00d9ff 0%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.3));
+}
+
+[data-testid="stMetric"] {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+[data-testid="stMetric"]:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 217, 255, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 217, 255, 0.15);
+}
+
+/* Buttons with Neon Glow */
+.stButton>button {
+    background: linear-gradient(135deg, #00d9ff 0%, #0077ff 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 32px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+}
+
+.stButton>button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+}
+
+.stButton>button:hover::before {
+    left: 100%;
+}
+
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5);
+}
+
+.stButton>button:active {
+    transform: translateY(0);
+}
+
+/* Secondary Buttons */
+.stButton>button[kind="secondary"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+}
+
+.stButton>button[kind="secondary"]:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Text Inputs with Glow Effect */
+.stTextInput>div>div>input {
+    background: rgba(15, 12, 41, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #ffffff;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+}
+
+.stTextInput>div>div>input:focus {
+    background: rgba(15, 12, 41, 0.8);
+    border-color: #00d9ff;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+}
+
+/* Sliders */
+.stSlider>div>div>div {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.stSlider>div>div>div>div {
+    background: linear-gradient(90deg, #00d9ff 0%, #0077ff 100%);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+/* Checkboxes */
+.stCheckbox>label {
+    color: #e0e0e0;
+    transition: color 0.3s ease;
+}
+
+.stCheckbox>label:hover {
+    color: #00d9ff;
+}
+
+/* Tables with Hover Effects */
+.dataframe {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dataframe thead tr th {
+    background: rgba(0, 217, 255, 0.1) !important;
+    color: #00d9ff !important;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0, 217, 255, 0.2) !important;
+    padding: 12px 16px !important;
+}
+
+.dataframe tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.dataframe tbody tr:hover {
+    background: rgba(0, 217, 255, 0.05) !important;
+    transform: scale(1.005);
+}
+
+.dataframe td {
+    padding: 10px 16px !important;
+}
+
+/* Expander with Animation */
+.streamlit-expanderHeader {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.streamlit-expanderHeader:hover {
+    background: rgba(0, 217, 255, 0.05);
+    border-color: rgba(0, 217, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Professional Navigation Buttons */
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    margin: 6px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    color: #e0e0e0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    user-select: none;
+}
+
+.nav-btn:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: rgba(0, 217, 255, 0.3);
+    transform: translateX(4px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.1);
+}
+
+.nav-btn.active {
+    background: linear-gradient(90deg, rgba(0, 217, 255, 0.15) 0%, rgba(0, 217, 255, 0.05) 100%);
+    border-color: #00d9ff;
+    color: #00d9ff;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), inset 3px 0 0 #00d9ff;
+}
+
+.nav-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.nav-btn.active svg {
+    filter: drop-shadow(0 0 4px rgba(0, 217, 255, 0.6));
+}
+
+.nav-btn:active {
+    transform: translateX(2px) scale(0.98);
+}
+
+/* Style Streamlit navigation buttons to match nav-btn */
+[data-testid="stSidebar"] .stButton>button {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 12px !important;
+    color: #e0e0e0 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    padding: 14px 16px !important;
+    margin: 6px 0 !important;
+    width: 100% !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: none !important;
+}
+
+[data-testid="stSidebar"] .stButton>button:hover {
+    background: rgba(0, 217, 255, 0.1) !important;
+    border-color: rgba(0, 217, 255, 0.3) !important;
+    transform: translateX(4px) !important;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.1) !important;
+}
+
+[data-testid="stSidebar"] .stButton>button[kind="primary"] {
+    background: linear-gradient(90deg, rgba(0, 217, 255, 0.15) 0%, rgba(0, 217, 255, 0.05) 100%) !important;
+    border-color: #00d9ff !important;
+    color: #00d9ff !important;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), inset 3px 0 0 #00d9ff !important;
+}
+
+/* Navigation Group Header */
+.nav-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    margin: -20px 0 12px 0;
+    color: #888;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Sidebar Logo */
+.sidebar-logo {
+    text-align: center;
+    padding: 24px 0;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-logo>div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.sidebar-logo svg {
+    width: 80px;
+    height: auto;
+    margin: 0 auto 12px;
+    display: block;
+}
+
+.sidebar-logo-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    display: block;
+}
+
+.sidebar-logo-title {
+    margin: 8px 0 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+}
+
+.sidebar-logo-subtitle {
+    margin: 4px 0 0 0;
+    color: #00d9ff;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+/* Headers with Gradient */
+h1,
+h2,
+h3 {
+    color: #ffffff;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00d9ff 0%, #0077ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 15px rgba(0, 217, 255, 0.3));
+}
+
+/* Status Indicators */
+.status-running {
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.status-stopped {
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.5));
+    }
+
+    50% {
+        opacity: 0.6;
+        filter: drop-shadow(0 0 2px rgba(0, 255, 136, 0.2));
+    }
+}
+
+/* Info/Success/Warning/Error Messages */
+.stAlert {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 5px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    border-radius: 12px;
+    padding: 10px 24px;
+    transition: all 0.3s ease;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+.stTabs [aria-selected="true"] {
+    background: rgba(0, 217, 255, 0.1) !important;
+    color: #00d9ff !important;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.1);
+}
+
+/* Progress Bars */
+.stProgress>div>div {
+    background: linear-gradient(90deg, #00d9ff 0%, #0077ff 100%);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 217, 255, 0.5);
+}
+
+/* Custom Card Class */
+.trading-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 24px;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+}
+
+.trading-card:hover {
+    border-color: rgba(0, 217, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 217, 255, 0.15);
+    transform: translateY(-4px);
+}
+
+/* System Info Text */
+.stText {
+    color: #b0b0b0;
+}
+
+/* Divider */
+hr {
+    border-color: rgba(255, 255, 255, 0.1);
+    margin: 20px 0;
+}
+
+/* Remove spacing from Streamlit wrapper divs around status sections */
+#status-container {
+    margin-top: 20px !important;
+    margin-bottom: 40px !important;
+}
+
+/* Ensure proper spacing between AI Intelligence table and status container */
+div[data-testid="stMarkdown"]:has(#status-container) {
+    margin-top: 20px !important;
+    margin-bottom: 40px !important;
+}
+
+/* Add spacing after AI Intelligence table */
+div[data-testid="stMarkdown"]:has(div[style*="linear-gradient(135deg, rgba(15, 12, 41, 0.95)"]) {
+    margin-bottom: 40px !important;
+}

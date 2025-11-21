@@ -63,6 +63,7 @@ from strategies.trend_following import TrendFollowingStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.volatility_breakout import VolatilityBreakoutStrategy
 from utils.logger import TradingLogger
+from utils.ui import load_css
 
 # Try to import real-time streaming
 try:
@@ -98,6 +99,19 @@ class TradingState:
             st.session_state.position_state = None
             st.session_state.notification = None
             st.session_state.connecting = False  # Flag to prevent multiple connection attempts
+            # TradingView Toolbar State
+            st.session_state.chart_toolbar = {
+                'compare_symbols': [],
+                'candle_style': 'candles',  # candles, hollow_candles, bars, line, area, baseline
+                'indicators': [],
+                'favorites': [],
+                'indicator_templates': [],
+                'alerts': [],
+                'bar_replay_active': False,
+                'bar_replay_position': 0,
+                'undo_stack': [],
+                'redo_stack': []
+            }
             st.session_state.initialized = True
     
     @property
@@ -385,6 +399,22 @@ def get_iconly_icon(icon_name: str, size: int = 20, color: str = "currentColor")
     }
     return icons.get(icon_name, '')
 
+def get_logo_svg(width="100%", height="auto", color="#00d9ff"):
+    """Read and return the Kiwi AI logo SVG."""
+    try:
+        svg_path = os.path.join(os.path.dirname(__file__), "assets", "svg", "KiwiAI.svg")
+        if os.path.exists(svg_path):
+            with open(svg_path, "r") as f:
+                svg_content = f.read()
+                # Inject width and height if needed, or wrap in a div
+                # For simplicity, we'll return it as is, but we might want to style it
+                return f'<div style="width: {width}; height: {height}; color: {color};">{svg_content}</div>'
+    except Exception as e:
+        logger.logger.error(f"Error reading logo SVG: {e}")
+    
+    # Fallback if file not found
+    return f'<div style="font-size: 40px;">🥝</div>'
+
 def get_tradingview_widget(symbol: str, height: int = 500) -> str:
     """
     Generate TradingView widget HTML for embedding.
@@ -423,7 +453,9 @@ def get_tradingview_widget(symbol: str, height: int = 500) -> str:
     """
     return widget_html
 
-def get_tradingview_mini_widget(symbol: str, width: str = "100%", height: int = 400) -> str:
+
+
+def get_tradingview_mini_widget(symbol: str, width: str = "100%", height: int = 600) -> str:
     """
     Generate TradingView advanced real-time chart widget.
     
@@ -452,8 +484,29 @@ def get_tradingview_mini_widget(symbol: str, width: str = "100%", height: int = 
         "locale": "en",
         "toolbar_bg": "#f1f3f6",
         "enable_publishing": false,
+        "hide_top_toolbar": false,
         "hide_side_toolbar": false,
-        "allow_symbol_change": false,
+        "allow_symbol_change": true,
+        "details": true,
+        "hotlist": true,
+        "calendar": true,
+        "withdateranges": true,
+        "show_popup_button": true,
+        "popup_width": "1000",
+        "popup_height": "650",
+        "enabled_features": [
+          "header_widget",
+          "header_compare",
+          "header_symbol_search",
+          "header_indicators",
+          "header_settings",
+          "header_chart_type",
+          "header_resolutions",
+          "header_screenshot",
+          "header_undo_redo",
+          "show_hide_button_in_legend",
+          "symbol_info"
+        ],
         "studies": [
           "STD;SMA",
           "STD;EMA",
@@ -1356,63 +1409,9 @@ def show_settings_page():
                 help="Maximum percentage of capital in a single position"
             ) / 100
         
-        st.subheader("📈 Asset Selection")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Get current trading symbol
-            current_symbol = settings.get('trading_symbol', 'SPY')
-            
-            # Asset category selection
-            asset_category = st.selectbox(
-                "Asset Category",
-                options=list(ASSET_CATEGORIES.keys()),
-                index=0,
-                help="Choose the type of asset you want to trade"
-            )
-        
-        with col2:
-            # Get assets in selected category
-            assets_in_category = ASSET_CATEGORIES[asset_category]
-            asset_names = list(assets_in_category.keys())
-            
-            # Try to find current symbol in selected category
-            default_index = 0
-            for idx, name in enumerate(asset_names):
-                tradingview_symbol = assets_in_category[name]
-                # Extract base symbol (e.g., "NVDA" from "NASDAQ:NVDA")
-                base_symbol = tradingview_symbol.split(':')[-1].replace('USDT', '')
-                if base_symbol == current_symbol or tradingview_symbol == current_symbol:
-                    default_index = idx
-                    break
-            
-            selected_asset = st.selectbox(
-                "Select Asset",
-                options=asset_names,
-                index=default_index,
-                help="Choose the specific asset to trade"
-            )
-            
-            # Get the TradingView symbol and extract Alpaca-compatible symbol
-            tradingview_symbol = assets_in_category[selected_asset]
-            
-            # Convert TradingView symbol to Alpaca symbol
-            if ':' in tradingview_symbol:
-                trading_symbol = tradingview_symbol.split(':')[-1]
-            else:
-                trading_symbol = tradingview_symbol
-            
-            # For crypto, remove USDT suffix for display
-            if asset_category == "Crypto":
-                trading_symbol = trading_symbol.replace('USDT', '')
-            
-            # Store full TradingView symbol for charts
-            st.session_state.tradingview_symbol = tradingview_symbol
-            st.session_state.asset_category = asset_category
-            
-            st.info(f"📊 Trading: **{selected_asset}** ({trading_symbol})")
-        
+        # Asset Selection moved to Dashboard
+
         st.subheader("⏰ Trading Intervals")
         
         col1, col2 = st.columns(2)
@@ -1492,9 +1491,10 @@ def show_settings_page():
                 })
 
 
+
+
 def show_dashboard_page():
     """Display unified trading dashboard with controls and asset selector."""
-    st.markdown(f'<h1>{get_iconly_icon("Activity", 24, "#00d9ff")} Kiwi AI Trading Dashboard</h1>', unsafe_allow_html=True)
     
     settings = load_settings()
     
@@ -1503,356 +1503,465 @@ def show_dashboard_page():
         return
     
     # ============================================================================
-    # PROFESSIONAL ASSET SELECTOR - Top Bar
+    # DASHBOARD HEADER & CONTROLS
     # ============================================================================
     
-    # Apple-style minimalist design with clean layout
-    st.markdown("""
-    <style>
-    /* Apple-style selectbox and button styling */
-    .stSelectbox > div > div {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 10px !important;
-        transition: all 0.3s ease !important;
-    }
-    .stSelectbox > div > div:hover {
-        background: rgba(255, 255, 255, 0.12) !important;
-        border-color: rgba(0, 217, 255, 0.4) !important;
-    }
-    .stSelectbox label {
-        font-size: 12px !important;
-        font-weight: 500 !important;
-        color: rgba(255, 255, 255, 0.7) !important;
-        letter-spacing: 0.5px !important;
-        text-transform: uppercase !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    # Header Layout: Title Only
+    st.markdown(f"""
+<div style='display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px;'>
+    {get_logo_svg(width="50px")}
+    <h1 style='margin: 0; color: #00d9ff; font-size: 28px;'>Kiwi AI Trading Dashboard</h1>
+</div>
+""", unsafe_allow_html=True)
+
+    # ============================================================================
+    # ASSET SELECTOR
+    # ============================================================================
+    st.markdown("### Trading Asset")
     
-    col_selector, col_controls = st.columns([3, 1])
+    col_cat, col_asset, _ = st.columns([1, 1, 2])
     
-    with col_selector:
-        # Clean header with icon
-        st.markdown("""
-        <div style='margin-bottom: 20px;'>
-            <h3 style='color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; 
-                       display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;'>
-                <span style='font-size: 24px;'>📊</span>
-                Select Trading Asset
-            </h3>
-        </div>
-        """, unsafe_allow_html=True)
+    with col_cat:
+        current_category = settings.get('asset_category', 'Stocks')
+        # Ensure current_category is valid
+        if current_category not in ASSET_CATEGORIES:
+            current_category = list(ASSET_CATEGORIES.keys())[0]
+            
+        asset_category = st.selectbox(
+            "Category",
+            options=list(ASSET_CATEGORIES.keys()),
+            index=list(ASSET_CATEGORIES.keys()).index(current_category),
+            key="asset_category_selector"
+        )
         
-        # Category and Asset selection in one row
-        sel_col1, sel_col2 = st.columns([1, 2])
+    with col_asset:
+        assets_in_category = ASSET_CATEGORIES[asset_category]
+        asset_names = list(assets_in_category.keys())
         
-        with sel_col1:
-            current_category = settings.get('asset_category', 'Stocks')
-            asset_category = st.selectbox(
-                "Category",
-                options=list(ASSET_CATEGORIES.keys()),
-                index=list(ASSET_CATEGORIES.keys()).index(current_category),
-                key="asset_category_selector"
-            )
-        
-        with sel_col2:
-            assets_in_category = ASSET_CATEGORIES[asset_category]
-            asset_names = list(assets_in_category.keys())
-            
-            # Find current selection or default to first
-            current_symbol = settings.get('trading_symbol', '')
-            current_tv_symbol = settings.get('tradingview_symbol', '')
-            
-            default_index = 0
-            for idx, (name, tv_sym) in enumerate(assets_in_category.items()):
-                if tv_sym == current_tv_symbol:
-                    default_index = idx
-                    break
-            
-            selected_asset_name = st.selectbox(
-                "Asset",
-                options=asset_names,
-                index=default_index,
-                key="asset_selector"
-            )
-            
-            selected_tradingview_symbol = assets_in_category[selected_asset_name]
-            
-            # Extract Alpaca symbol from TradingView symbol
-            if asset_category == "Stocks":
-                selected_symbol = selected_tradingview_symbol.split(':')[1]
-            elif asset_category == "Crypto":
-                # Convert BTCUSDT to BTC/USD format for Alpaca
-                crypto_symbol = selected_tradingview_symbol.split(':')[1].replace('USDT', '/USD')
-                selected_symbol = crypto_symbol
-            else:
-                selected_symbol = selected_asset_name
-            
-            # Update settings if changed
-            if (settings.get('trading_symbol') != selected_symbol or 
-                settings.get('tradingview_symbol') != selected_tradingview_symbol or
-                settings.get('asset_category') != asset_category):
+        # Find current selection
+        current_tv_symbol = settings.get('tradingview_symbol', '')
+        default_index = 0
+        for idx, (name, tv_sym) in enumerate(assets_in_category.items()):
+            if tv_sym == current_tv_symbol:
+                default_index = idx
+                break
                 
-                settings['trading_symbol'] = selected_symbol
-                settings['tradingview_symbol'] = selected_tradingview_symbol
-                settings['asset_category'] = asset_category
-                save_settings(settings)
-                st.success(f"✅ Switched to {selected_asset_name}")
-                time.sleep(1)
-                st.rerun()
-    
-    with col_controls:
-        # Clean header with icon
-        st.markdown("""
-        <div style='margin-bottom: 20px;'>
-            <h3 style='color: #ffffff; font-size: 20px; font-weight: 600; margin: 0; 
-                       display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;'>
-                <span style='font-size: 24px;'>⚡</span>
-                Trading Controls
-            </h3>
-        </div>
-        """, unsafe_allow_html=True)
+        selected_asset_name = st.selectbox(
+            "Assets",
+            options=asset_names,
+            index=default_index,
+            key="asset_selector"
+        )
         
-        # Start/Stop trading button with Apple-style design
-        if trading_state.running:
-            # Stop button with refined styling
-            st.markdown("""
-            <style>
-            div[data-testid="stButton"] > button[kind="secondary"] {
-                background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9)) !important;
-                border: none !important;
-                border-radius: 12px !important;
-                padding: 14px 24px !important;
-                font-size: 15px !important;
-                font-weight: 600 !important;
-                letter-spacing: 0.3px !important;
-                color: white !important;
-                box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            }
-            div[data-testid="stButton"] > button[kind="secondary"]:hover {
-                transform: translateY(-2px) !important;
-                box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            icon_col, btn_col = st.columns([0.1, 0.9])
-            with icon_col:
-                st.markdown(get_iconly_icon("Stop", 18, "#ffffff"), unsafe_allow_html=True)
-            with btn_col:
-                if st.button("Stop Trading", use_container_width=True, type="secondary"):
-                    try:
-                        # First stop the trading flag
-                        trading_state.running = False
-                        logger.logger.info("🛑 Stopping trading system...")
-                        
-                        # Close WebSocket connection with proper cleanup
-                        if trading_state.stream is not None:
-                            try:
-                                logger.logger.info("🔌 Closing WebSocket connection...")
-                                trading_state.stream.stop()
-                                time.sleep(3)  # Give more time for proper cleanup
-                                trading_state.stream = None
-                                logger.logger.info("✅ WebSocket closed successfully")
-                            except Exception as e:
-                                logger.logger.warning(f"Warning closing WebSocket: {e}")
-                                trading_state.stream = None
-                        
-                        # Wait for thread to finish
-                        if trading_state.thread is not None:
-                            trading_state.thread.join(timeout=5)
-                            trading_state.thread = None
-                        
-                        st.success("✅ Trading stopped! Waiting 5 seconds before allowing restart...")
-                        logger.logger.info("Trading stopped via UI")
-                        time.sleep(5)  # Prevent immediate restart
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-                        logger.logger.error(f"Error stopping trading: {e}")
+        # Update settings logic
+        selected_tradingview_symbol = assets_in_category[selected_asset_name]
+        if asset_category == "Stocks":
+            selected_symbol = selected_tradingview_symbol.split(':')[1]
+        elif asset_category == "Crypto":
+            selected_symbol = selected_tradingview_symbol.split(':')[1].replace('USDT', '/USD')
         else:
-            # Start button with refined Apple-style design
-            st.markdown("""
-            <style>
-            div[data-testid="stButton"] > button[kind="primary"] {
-                background: linear-gradient(135deg, rgba(0, 217, 255, 1), rgba(0, 180, 255, 1)) !important;
-                border: none !important;
-                border-radius: 12px !important;
-                padding: 14px 24px !important;
-                font-size: 15px !important;
-                font-weight: 600 !important;
-                letter-spacing: 0.3px !important;
-                color: white !important;
-                box-shadow: 0 4px 14px rgba(0, 217, 255, 0.4) !important;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            }
-            div[data-testid="stButton"] > button[kind="primary"]:hover {
-                transform: translateY(-2px) !important;
-                box-shadow: 0 6px 20px rgba(0, 217, 255, 0.5) !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+            selected_symbol = selected_asset_name
             
-            icon_col, btn_col = st.columns([0.1, 0.9])
-            with icon_col:
-                st.markdown(get_iconly_icon("Play", 18, "#ffffff"), unsafe_allow_html=True)
-            with btn_col:
-                if st.button("Start Trading", use_container_width=True, type="primary"):
-                    # Check if there's already an active stream
+        if (settings.get('trading_symbol') != selected_symbol or 
+            settings.get('tradingview_symbol') != selected_tradingview_symbol or
+            settings.get('asset_category') != asset_category):
+            
+            settings['trading_symbol'] = selected_symbol
+            settings['tradingview_symbol'] = selected_tradingview_symbol
+            settings['asset_category'] = asset_category
+            save_settings(settings)
+            st.rerun()
+
+    # ============================================================================
+    # TRADING CONTROLS
+    # ============================================================================
+    # Center-Right placement between Asset and Tools
+    _, col_btn = st.columns([3, 1])
+    with col_btn:
+        # Start/Stop Logic
+        if trading_state.running:
+            if st.button("Stop", key="btn_stop", type="primary", use_container_width=True):
+                try:
+                    trading_state.running = False
+                    logger.logger.info("🛑 Stopping trading system...")
                     if trading_state.stream is not None:
-                        st.warning("⚠️ Cleaning up existing connection first...")
                         try:
                             trading_state.stream.stop()
                             time.sleep(3)
                             trading_state.stream = None
                         except:
                             pass
-                    
-                    st.info("🚀 Starting Real-Time Trading System...")
+                    if trading_state.thread is not None:
+                        trading_state.thread.join(timeout=5)
+                        trading_state.thread = None
+                    st.success("Stopped")
+                    time.sleep(2)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        else:
+            if st.button("Start", key="btn_start", type="primary", use_container_width=True):
+                # Check existing stream
+                if trading_state.stream is not None:
                     try:
-                        trading_state.running = True
-                        trading_state.mode = 'realtime'
-                        
-                        def run_realtime():
-                            try:
-                                run_realtime_trading(settings)
-                            except Exception as e:
-                                log_error('Real-Time Mode', 'Critical error', e, {'settings': str(settings)})
-                                trading_state.running = False
-                        
-                        trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
-                        trading_state.thread.start()
-                        logger.logger.info("Real-time mode started")
-                        time.sleep(2)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Failed to start: {e}")
-                        logger.logger.error(f"Failed to start trading: {e}")
+                        trading_state.stream.stop()
+                        trading_state.stream = None
+                    except:
+                        pass
+                
+                st.info("Starting...")
+                try:
+                    trading_state.running = True
+                    trading_state.mode = 'realtime'
+                    
+                    def run_realtime():
+                        try:
+                            run_realtime_trading(settings)
+                        except Exception as e:
+                            log_error('Real-Time Mode', 'Critical error', e, {'settings': str(settings)})
+                            trading_state.running = False
+                    
+                    trading_state.thread = threading.Thread(target=run_realtime, daemon=True)
+                    trading_state.thread.start()
+                    time.sleep(2)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Failed: {e}")
+
+    # ============================================================================
+    # WIDGET HEADER
+    # ============================================================================
+    st.markdown("### Technical Analysis Tools")
     
-    # Get current asset info
+    # Get current asset info for chart
     selected_symbol = settings.get('trading_symbol', 'SPY')
     tradingview_symbol = settings.get('tradingview_symbol', 'NASDAQ:SPY')
-    asset_category = settings.get('asset_category', 'Stocks')
     
-    # ============================================================================
-    # LIVE STATUS BAR
-    # ============================================================================
-    status_cols = st.columns([1, 1, 1, 1])
-    
-    with status_cols[0]:
-        if trading_state.running:
-            st.success("🔴 **LIVE TRADING**")
-        else:
-            st.info("⚪ **STOPPED**")
-    
-    with status_cols[1]:
-        st.info(f"**Asset:** {selected_symbol}")
-    
-    with status_cols[2]:
-        st.info(f"**Category:** {asset_category}")
-    
-    with status_cols[3]:
-        mode_text = "PAPER" if settings.get('is_paper_trading', True) else "🔴 LIVE"
-        st.warning(f"**Mode:** {mode_text}")
-    
+
     # ============================================================================
     # TRADINGVIEW CHART - Full Width Professional Display
     # ============================================================================
+    # Chart Header
     st.subheader(f"📊 {selected_asset_name} - Real-Time Chart")
+
+    # Get current toolbar state
+    toolbar_state = st.session_state.get('chart_toolbar', {})
+    candle_style = toolbar_state.get('candle_style', 'candles')
+    indicators = toolbar_state.get('indicators', [])
+    compare_symbols = toolbar_state.get('compare_symbols', [])
+    favorites = toolbar_state.get('favorites', [])
+    bar_replay_active = toolbar_state.get('bar_replay_active', False)
     
-    # Full width chart - no columns needed
-    # Embed TradingView Advanced Chart with professional settings
-    tradingview_html = f"""
-        <!DOCTYPE html>
-        <html style="height: 100%; margin: 0; padding: 0;">
-        <head>
-            <style>
-                * {{
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }}
-                html, body {{
-                    height: 100%;
-                    width: 100%;
-                    overflow: hidden;
-                    background: #0f0c29;
-                }}
-                .tradingview-widget-container {{ 
-                    height: 100%;
-                    width: 100%;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 8px 32px rgba(0, 217, 255, 0.15);
-                    border: 1px solid rgba(0, 217, 255, 0.2);
-                    display: flex;
-                    flex-direction: column;
-                }}
-                #tradingview_chart {{
-                    height: 100% !important;
-                    width: 100% !important;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="tradingview-widget-container">
-              <div id="tradingview_chart"></div>
-            </div>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-            <script type="text/javascript">
-              new TradingView.widget({{
-                "autosize": true,
-                "symbol": "{tradingview_symbol}",
-                "interval": "5",
-                "timezone": "America/New_York",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#131722",
-                "enable_publishing": false,
-                "withdateranges": true,
-                "range": "1D",
-                "hide_side_toolbar": false,
-                "allow_symbol_change": true,
-                "details": true,
-                "hotlist": true,
-                "calendar": true,
-                "show_popup_button": true,
-                "popup_width": "1000",
-                "popup_height": "650",
-                "studies": [
-                  "RSI@tv-basicstudies",
-                  "MASimple@tv-basicstudies",
-                  "MACD@tv-basicstudies",
-                  "BB@tv-basicstudies"
-                ],
-                "container_id": "tradingview_chart",
-                "enabled_features": [
-                  "study_templates",
-                  "use_localstorage_for_settings",
-                  "save_chart_properties_to_local_storage",
-                  "create_volume_indicator_by_default",
-                  "side_toolbar_in_fullscreen_mode",
-                  "header_in_fullscreen_mode",
-                  "left_toolbar"
-                ],
-                "disabled_features": [],
-                "overrides": {{
-                  "mainSeriesProperties.candleStyle.upColor": "#00d9ff",
-                  "mainSeriesProperties.candleStyle.downColor": "#ff4444",
-                  "mainSeriesProperties.candleStyle.borderUpColor": "#00d9ff",
-                  "mainSeriesProperties.candleStyle.borderDownColor": "#ff4444",
-                  "mainSeriesProperties.candleStyle.wickUpColor": "#00d9ff",
-                  "mainSeriesProperties.candleStyle.wickDownColor": "#ff4444"
-                }}
-              }});
-            </script>
-        </body>
-        </html>
+    # Map candle style to TradingView style parameter
+    style_map = {
+        'candles': '1',
+        'hollow_candles': '9',
+        'bars': '0',
+        'line': '2',
+        'area': '3',
+        'baseline': '10'
+    }
+    tv_style = style_map.get(candle_style, '1')
+    
+    # Map indicators to TradingView studies
+    indicator_to_study = {
+        'RSI': 'RSI@tv-basicstudies',
+        'MACD': 'MACD@tv-basicstudies',
+        'Bollinger Bands': 'BB@tv-basicstudies',
+        'SMA': 'MASimple@tv-basicstudies',
+        'EMA': 'EMA@tv-basicstudies',
+        'Stochastic': 'Stochastic@tv-basicstudies',
+        'ADX': 'ADX@tv-basicstudies',
+        'ATR': 'ATR@tv-basicstudies',
+        'Volume': 'Volume@tv-basicstudies',
+        'OBV': 'OBV@tv-basicstudies',
+        'Williams %R': 'WilliamR@tv-basicstudies',
+        'WMA': 'WMA@tv-basicstudies',
+        'Keltner Channels': 'KeltnerChannels@tv-basicstudies'
+    }
+    
+    # Build studies list from active indicators
+    studies = []
+    for indicator in indicators:
+        if indicator in indicator_to_study:
+            studies.append(indicator_to_study[indicator])
+    
+    # If no indicators, add default ones
+    if not studies:
+        studies = ['RSI@tv-basicstudies', 'MASimple@tv-basicstudies']
+    
+    # Build compare symbols list for TradingView
+    compare_symbols_list = compare_symbols[:4]  # TradingView supports up to 4 compare symbols
+    
+    # Build ICT Killzones time ranges (in UTC)
+    killzone_times = {
+        'Asian Session': {'start': '00:00', 'end': '08:00', 'color': '#00d9ff'},
+        'London Session': {'start': '08:00', 'end': '16:00', 'color': '#ffd700'},
+        'New York Session': {'start': '13:00', 'end': '21:00', 'color': '#ff6b6b'},
+        'London-NY Overlap': {'start': '13:00', 'end': '16:00', 'color': '#4ecdc4'},
+        'Power Hour': {'start': '15:00', 'end': '16:00', 'color': '#ff4444'}
+    }
+    
+    # Build overrides for ICT Killzones (vertical lines at session times)
+    overrides = {
+        "mainSeriesProperties.candleStyle.upColor": "#00d9ff",
+        "mainSeriesProperties.candleStyle.downColor": "#ff4444",
+        "mainSeriesProperties.candleStyle.borderUpColor": "#00d9ff",
+        "mainSeriesProperties.candleStyle.borderDownColor": "#ff4444",
+        "mainSeriesProperties.candleStyle.wickUpColor": "#00d9ff",
+        "mainSeriesProperties.candleStyle.wickDownColor": "#ff4444"
+    }
+    
+    # Add session time markers if favorites are active
+    if favorites:
+        for fav in favorites:
+            if fav in killzone_times:
+                zone = killzone_times[fav]
+                pass
+    
+    # Build studies JSON string
+    studies_json = json.dumps(studies)
+    
+    # Build compare symbols JSON
+    compare_json = json.dumps(compare_symbols_list)
+    
+    # Create two-column layout for Chart and Market Data (Equal Size)
+    chart_col, market_col = st.columns([1, 1])
+    
+    with chart_col:
+        # Embed TradingView Advanced Chart
+        tradingview_html = f"""
+            <!DOCTYPE html>
+            <html style="margin: 0; padding: 0;">
+            <head>
+                <style>
+                    * {{
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }}
+                    body {{
+                        background: transparent;
+                        min-height: 720px;
+                    }}
+                    .chart-wrapper {{
+                        width: 100%;
+                        height: 720px;
+                    }}
+                    .tradingview-widget-container {{
+                        width: 100%;
+                        height: 100%;
+                    }}
+                    #tradingview_chart {{
+                        width: 100%;
+                        height: 100%;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="chart-wrapper">
+                    <div class="tradingview-widget-container">
+                      <div id="tradingview_chart"></div>
+                    </div>
+                </div>
+                
+                <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                <script type="text/javascript">
+                  new TradingView.widget({{
+                    "autosize": true,
+                    "symbol": "{tradingview_symbol}",
+                    "interval": "5",
+                    "timezone": "America/New_York",
+                    "theme": "dark",
+                    "style": "{tv_style}",
+                    "locale": "en",
+                    "toolbar_bg": "#131722",
+                    "enable_publishing": false,
+                    "hide_top_toolbar": false,
+                    "withdateranges": true,
+                    "range": "1D",
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": true,
+                    "details": true,
+                    "hotlist": true,
+                    "calendar": true,
+                    "container_id": "tradingview_chart",
+                    "studies": {studies_json},
+                    "compare_symbols": {compare_json},
+                    "overrides": {json.dumps(overrides)}
+                  }});
+                </script>
+            </body>
+            </html>
         """
-    components.html(tradingview_html, height=700)
+        components.html(tradingview_html, height=720)
+    
+    with market_col:
+        # Market Data Widget
+        st.markdown("### 📈 Market Data")
+        
+        # TradingView Market Overview Widget
+        market_data_html = f"""
+            <!DOCTYPE html>
+            <html style="margin: 0; padding: 0;">
+            <head>
+                <style>
+                    body {{
+                        background: transparent;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .market-widget-container {{
+                        width: 100%;
+                        height: 720px;
+                        background: #0f0c29;
+                        border-radius: 12px;
+                        border: 1px solid rgba(0, 217, 255, 0.2);
+                        overflow: hidden;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="market-widget-container">
+                    <!-- TradingView Widget BEGIN -->
+                    <div class="tradingview-widget-container" style="height:100%;width:100%">
+                      <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+                      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                      {{
+                      "colorTheme": "dark",
+                      "dateRange": "1D",
+                      "showChart": true,
+                      "locale": "en",
+                      "width": "100%",
+                      "height": "100%",
+                      "largeChartUrl": "",
+                      "isTransparent": false,
+                      "showSymbolLogo": true,
+                      "showFloatingTooltip": true,
+                      "plotLineColorGrowing": "rgba(0, 217, 255, 1)",
+                      "plotLineColorFalling": "rgba(255, 68, 68, 1)",
+                      "gridLineColor": "rgba(42, 46, 57, 0)",
+                      "scaleFontColor": "rgba(209, 212, 220, 1)",
+                      "belowLineFillColorGrowing": "rgba(0, 217, 255, 0.12)",
+                      "belowLineFillColorFalling": "rgba(255, 68, 68, 0.12)",
+                      "belowLineFillColorGrowingBottom": "rgba(0, 217, 255, 0)",
+                      "belowLineFillColorFallingBottom": "rgba(255, 68, 68, 0)",
+                      "symbolActiveColor": "rgba(0, 217, 255, 0.12)",
+                      "tabs": [
+                        {{
+                          "title": "Indices",
+                          "symbols": [
+                            {{
+                              "s": "FOREXCOM:SPXUSD",
+                              "d": "S&P 500"
+                            }},
+                            {{
+                              "s": "FOREXCOM:NSXUSD",
+                              "d": "US 100"
+                            }},
+                            {{
+                              "s": "FOREXCOM:DJI",
+                              "d": "Dow 30"
+                            }},
+                            {{
+                              "s": "INDEX:NKY",
+                              "d": "Nikkei 225"
+                            }},
+                            {{
+                              "s": "INDEX:DEU40",
+                              "d": "DAX Index"
+                            }}
+                          ],
+                          "originalTitle": "Indices"
+                        }},
+                        {{
+                          "title": "Futures",
+                          "symbols": [
+                            {{
+                              "s": "CME_MINI:ES1!",
+                              "d": "S&P 500"
+                            }},
+                            {{
+                              "s": "CME:6E1!",
+                              "d": "Euro"
+                            }},
+                            {{
+                              "s": "COMEX:GC1!",
+                              "d": "Gold"
+                            }},
+                            {{
+                              "s": "NYMEX:CL1!",
+                              "d": "WTI Crude Oil"
+                            }},
+                            {{
+                              "s": "NYMEX:NG1!",
+                              "d": "Gas"
+                            }}
+                          ],
+                          "originalTitle": "Futures"
+                        }},
+                        {{
+                          "title": "Forex",
+                          "symbols": [
+                            {{
+                              "s": "FX:EURUSD",
+                              "d": "EUR to USD"
+                            }},
+                            {{
+                              "s": "FX:GBPUSD",
+                              "d": "GBP to USD"
+                            }},
+                            {{
+                              "s": "FX:USDJPY",
+                              "d": "USD to JPY"
+                            }},
+                            {{
+                              "s": "FX:USDCHF",
+                              "d": "USD to CHF"
+                            }},
+                            {{
+                              "s": "FX:AUDUSD",
+                              "d": "AUD to USD"
+                            }}
+                          ],
+                          "originalTitle": "Forex"
+                        }},
+                        {{
+                          "title": "Crypto",
+                          "symbols": [
+                            {{
+                              "s": "BINANCE:BTCUSDT",
+                              "d": "Bitcoin"
+                            }},
+                            {{
+                              "s": "BINANCE:ETHUSDT",
+                              "d": "Ethereum"
+                            }},
+                            {{
+                              "s": "BINANCE:BNBUSDT",
+                              "d": "BNB"
+                            }},
+                            {{
+                              "s": "BINANCE:SOLUSDT",
+                              "d": "Solana"
+                            }},
+                            {{
+                              "s": "BINANCE:ADAUSDT",
+                              "d": "Cardano"
+                            }}
+                          ],
+                          "originalTitle": "Crypto"
+                        }}
+                      ]
+                      }}
+                      </script>
+                    </div>
+                    <!-- TradingView Widget END -->
+                </div>
+            </body>
+            </html>
+        """
+        components.html(market_data_html, height=720)
     
     # ============================================================================
     # AI INTELLIGENCE & ANALYSIS - Unified Table View
@@ -3267,581 +3376,14 @@ def main():
     # Page configuration
     st.set_page_config(
         page_title="Kiwi AI Trading System",
-        page_icon="📈",
+        page_icon="📊",
         layout="wide",
         initial_sidebar_state="expanded"
     )
     
     # Professional Trading Dashboard CSS with Liquid Animations
-    st.markdown("""
-        <style>
-        /* Import Professional Font */
-        @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;600;700&display=swap');
-        
-        /* Global Styles */
-        * {
-            font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        /* Iconly Icon Styling */
-        .iconly-icon {
-            display: inline-block;
-            width: 1.2em;
-            height: 1.2em;
-            vertical-align: middle;
-            margin-right: 6px;
-            fill: currentColor;
-        }
-        
-        /* Main App Background with Gradient */
-        .stApp {
-            background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
-            background-attachment: fixed;
-        }
-        
-        /* Toolbar Styling - Match Background */
-        [data-testid="stToolbar"] {
-            background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%) !important;
-            background-attachment: fixed !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        
-        /* Toolbar Button - Hide or Style */
-        [data-testid="stToolbar"] button,
-        [data-testid="stToolbar"] a {
-            background: transparent !important;
-            color: rgba(255, 255, 255, 0.3) !important;
-            border: none !important;
-        }
-        
-        [data-testid="stToolbar"] button:hover,
-        [data-testid="stToolbar"] a:hover {
-            background: rgba(255, 255, 255, 0.05) !important;
-            color: rgba(255, 255, 255, 0.5) !important;
-        }
-        
-        /* Custom Settings Icon in Toolbar */
-        .toolbar-settings-icon {
-            position: absolute;
-            right: 120px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-        
-        .toolbar-settings-icon:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-50%) scale(1.1);
-        }
-        
-        .toolbar-settings-icon svg {
-            width: 20px;
-            height: 20px;
-            fill: rgba(255, 255, 255, 0.6);
-            transition: fill 0.3s ease;
-        }
-        
-        .toolbar-settings-icon:hover svg {
-            fill: #00d9ff;
-        }
-        
-        /* Main Block Container - Match Background */
-        [data-testid="stMainBlockContainer"],
-        .block-container {
-            background: transparent !important;
-        }
-        
-        /* Sidebar Styling */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #1a1a2e 0%, #0f0c29 100%);
-            border-right: 1px solid rgba(0, 217, 255, 0.2);
-            border-radius: 16px;
-            margin: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            overflow: hidden;
-        }
-        
-        /* Sidebar Content Container */
-        [data-testid="stSidebar"] {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        [data-testid="stSidebar"] > div:first-child {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            min-height: 100vh;
-            position: relative;
-        }
-        
-        /* Navigation content wrapper - takes available space */
-        .sidebar-nav-content {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            min-height: 0;
-        }
-        
-        /* System Info positioning - stick to absolute bottom */
-        [data-testid="stSidebar"] .system-info-container {
-            margin-top: auto;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 10;
-        }
-        
-        /* Ensure System Info is always at bottom */
-        [data-testid="stSidebar"] .stMarkdown:has(.system-info-container) {
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
-            flex-shrink: 0 !important;
-        }
-        
-        /* Spacer to push content to bottom */
-        [data-testid="stSidebar"] .stMarkdown:has(div[style*="flex: 1"]) {
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-        }
-        
-        [data-testid="stSidebar"] .stMarkdown {
-            color: #e0e0e0;
-        }
-        
-        /* Logo Area */
-        [data-testid="stSidebar"] img {
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
-            transition: transform 0.3s ease;
-        }
-        
-        [data-testid="stSidebar"] img:hover {
-            transform: scale(1.05);
-        }
-        
-        /* Navigation Radio Buttons */
-        .stRadio > div {
-            gap: 8px;
-        }
-        
-        .stRadio > div > label {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px 20px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-        }
-        
-        .stRadio > div > label:hover {
-            background: rgba(0, 217, 255, 0.15);
-            border-color: rgba(0, 217, 255, 0.5);
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.2);
-        }
-        
-        .stRadio > div > label[data-selected="true"] {
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2) 0%, rgba(76, 175, 254, 0.2) 100%);
-            border-color: #00d9ff;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
-        }
-        
-        /* Metric Cards with Glass Effect */
-        [data-testid="stMetricValue"] {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #00d9ff;
-            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
-        }
-        
-        [data-testid="stMetric"] {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-        
-        [data-testid="stMetric"]:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(0, 217, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.2);
-        }
-        
-        /* Buttons with Liquid Animation */
-        .stButton > button {
-            background: linear-gradient(135deg, #00d9ff 0%, #4cafff 100%);
-            color: #ffffff;
-            border: none;
-            border-radius: 12px;
-            padding: 12px 32px;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stButton > button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .stButton > button:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.5);
-        }
-        
-        .stButton > button:active {
-            transform: translateY(0);
-        }
-        
-        /* Success/Warning/Error Buttons */
-        .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #00d9ff 0%, #4cafff 100%);
-        }
-        
-        .stButton > button[kind="secondary"] {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-        }
-        
-        /* Text Inputs with Glow Effect */
-        .stTextInput > div > div > input {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #ffffff;
-            padding: 12px 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .stTextInput > div > div > input:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #00d9ff;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-        }
-        
-        /* Sliders */
-        .stSlider > div > div > div {
-            background: rgba(0, 217, 255, 0.2);
-        }
-        
-        .stSlider > div > div > div > div {
-            background: linear-gradient(90deg, #00d9ff 0%, #4cafff 100%);
-        }
-        
-        /* Checkboxes */
-        .stCheckbox > label {
-            color: #e0e0e0;
-            transition: color 0.3s ease;
-        }
-        
-        .stCheckbox > label:hover {
-            color: #00d9ff;
-        }
-        
-        /* Tables with Hover Effects */
-        .dataframe {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        
-        .dataframe thead tr th {
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2) 0%, rgba(76, 175, 254, 0.2) 100%) !important;
-            color: #00d9ff !important;
-            font-weight: 600;
-            border-bottom: 2px solid rgba(0, 217, 255, 0.5) !important;
-        }
-        
-        .dataframe tbody tr {
-            transition: all 0.3s ease;
-        }
-        
-        .dataframe tbody tr:hover {
-            background: rgba(0, 217, 255, 0.1) !important;
-            transform: scale(1.01);
-        }
-        
-        /* Expander with Animation */
-        .streamlit-expanderHeader {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-        
-        .streamlit-expanderHeader:hover {
-            background: rgba(0, 217, 255, 0.1);
-            border-color: rgba(0, 217, 255, 0.3);
-        }
-        
-        /* Professional Navigation Buttons */
-        .nav-btn {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            padding: 14px 16px;
-            margin: 6px 0;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            color: #e0e0e0;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            user-select: none;
-        }
-        
-        .nav-btn:hover {
-            background: rgba(0, 217, 255, 0.12);
-            border-color: rgba(0, 217, 255, 0.4);
-            transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.15);
-        }
-        
-        .nav-btn.active {
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.18) 0%, rgba(76, 175, 254, 0.18) 100%);
-            border-color: #00d9ff;
-            color: #00d9ff;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-        }
-        
-        .nav-btn svg {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
-        
-        .nav-btn.active svg {
-            filter: drop-shadow(0 0 4px rgba(0, 217, 255, 0.6));
-        }
-        
-        .nav-btn:active {
-            transform: translateX(2px) scale(0.98);
-        }
-        
-        /* Style Streamlit navigation buttons to match nav-btn */
-        [data-testid="stSidebar"] .stButton > button {
-            background: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            border-radius: 10px !important;
-            color: #e0e0e0 !important;
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            padding: 14px 16px !important;
-            margin: 6px 0 !important;
-            width: 100% !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-        
-        [data-testid="stSidebar"] .stButton > button:hover {
-            background: rgba(0, 217, 255, 0.12) !important;
-            border-color: rgba(0, 217, 255, 0.4) !important;
-            transform: translateX(4px) !important;
-            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.15) !important;
-        }
-        
-        [data-testid="stSidebar"] .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.18) 0%, rgba(76, 175, 254, 0.18) 100%) !important;
-            border-color: #00d9ff !important;
-            color: #00d9ff !important;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3) !important;
-        }
-        
-        /* Navigation Group Header */
-        .nav-group-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            margin: -20px 0 12px 0;
-            color: #b0b0b0;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        /* Sidebar Logo */
-        .sidebar-logo {
-            text-align: center;
-            padding: 24px 0;
-            margin-bottom: 8px;
-        }
-        
-        .sidebar-logo-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 12px;
-            display: block;
-        }
-        
-        .sidebar-logo-title {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-        }
-        
-        .sidebar-logo-subtitle {
-            margin: 4px 0 0 0;
-            color: #00d9ff;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-        
-        /* Headers with Gradient */
-        h1, h2, h3 {
-            color: #ffffff;
-            font-weight: 700;
-            background: linear-gradient(135deg, #00d9ff 0%, #4cafff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        /* Status Indicators */
-        .status-running {
-            color: #00ff88;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-stopped {
-            color: #ff6b6b;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        /* Info/Success/Warning/Error Messages */
-        .stAlert {
-            border-radius: 12px;
-            border-left: 4px solid;
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 12px 24px;
-            transition: all 0.3s ease;
-        }
-        
-        .stTabs [data-baseweb="tab"]:hover {
-            background: rgba(0, 217, 255, 0.1);
-        }
-        
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.2) 0%, rgba(76, 175, 254, 0.2) 100%);
-            border-bottom: 2px solid #00d9ff;
-        }
-        
-        /* Progress Bars */
-        .stProgress > div > div {
-            background: linear-gradient(90deg, #00d9ff 0%, #4cafff 100%);
-            border-radius: 10px;
-        }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #00d9ff 0%, #4cafff 100%);
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #4cafff 0%, #00d9ff 100%);
-        }
-        
-        /* Custom Card Class */
-        .trading-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 24px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-        
-        .trading-card:hover {
-            border-color: rgba(0, 217, 255, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.2);
-            transform: translateY(-4px);
-        }
-        
-        /* System Info Text */
-        .stText {
-            color: #b0b0b0;
-        }
-        
-        /* Divider */
-        hr {
-            border-color: rgba(255, 255, 255, 0.1);
-            margin: 20px 0;
-        }
-        
-        /* Remove spacing from Streamlit wrapper divs around status sections */
-        #status-container {
-            margin-top: 20px !important;
-            margin-bottom: 40px !important;
-        }
-        
-        /* Ensure proper spacing between AI Intelligence table and status container */
-        div[data-testid="stMarkdown"]:has(#status-container) {
-            margin-top: 20px !important;
-            margin-bottom: 40px !important;
-        }
-        
-        /* Add spacing after AI Intelligence table */
-        div[data-testid="stMarkdown"]:has(div[style*="linear-gradient(135deg, rgba(15, 12, 41, 0.95)"]) {
-            margin-bottom: 40px !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    css_path = os.path.join(os.path.dirname(__file__), "assets", "css", "style.css")
+    load_css(css_path)
     
     # Add Settings icon to toolbar
     settings_icon_html = get_iconly_icon("Setting", 20, "rgba(255, 255, 255, 0.6)")
@@ -3939,21 +3481,9 @@ def main():
             st.session_state.current_page = "Dashboard"
         
         # Professional Header with SVG Logo
-        st.markdown("""
-            <div class="sidebar-logo">
-                <svg class="sidebar-logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#00d9ff;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#4cafff;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                    <path d="M24 4L8 14V34L24 44L40 34V14L24 4Z" stroke="url(#logoGradient)" stroke-width="2" fill="rgba(0, 217, 255, 0.1)"/>
-                    <path d="M24 12L14 18V30L24 36L34 30V18L24 12Z" fill="url(#logoGradient)"/>
-                    <circle cx="24" cy="24" r="3" fill="#0f0c29"/>
-                    <path d="M20 20L24 24L28 20" stroke="#0f0c29" stroke-width="1.5" stroke-linecap="round"/>
-                    <path d="M20 28L24 24L28 28" stroke="#0f0c29" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
+        st.markdown(f"""
+            <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                {get_logo_svg(width="160px")}
                 <h1 class="sidebar-logo-title">Kiwi AI</h1>
                 <p class="sidebar-logo-subtitle">Trading System</p>
             </div>
@@ -3979,258 +3509,60 @@ def main():
             st.query_params.clear()
             st.rerun()
         
-        # Create collapsible navigation with Apple-style design
-        st.markdown("### NAVIGATION")
+        # Spacer to push content to middle
+        st.markdown('<div style="flex: 1;"></div>', unsafe_allow_html=True)
         
-        # Dashboard - Main button with expand/collapse
-        dashboard_active = current_page in ["Dashboard", "Settings", "Error Log", "Help"]
-        
-        # Prepare SVG icons and escape for JavaScript (removed Overview/Activity icon)
-        chart_icon_svg = get_iconly_icon("Chart", 20, "#00d9ff" if dashboard_active else "#ffffff")
-        search_icon_svg = get_iconly_icon("Search", 18, "#00d9ff" if current_page == "Error Log" else "#ffffff")
-        info_icon_svg = get_iconly_icon("Info", 18, "#00d9ff" if current_page == "Help" else "#ffffff")
-        
-        # Escape SVG for JavaScript (JSON encoding handles all special characters)
-        chart_icon_js = json.dumps(chart_icon_svg)
-        search_icon_js = json.dumps(search_icon_svg)
-        info_icon_js = json.dumps(info_icon_svg)
-        
-        # CSS and JavaScript to inject icons and remove triangles
-        st.markdown(f"""
-        <style>
-        /* Style buttons to display icons properly */
-        [data-testid="stSidebar"] .stButton > button {{
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 8px !important;
-            padding-left: 16px !important;
-        }}
-        
-        /* Ensure SVG icons are visible and properly sized */
-        [data-testid="stSidebar"] button svg.iconly-icon {{
-            width: 20px !important;
-            height: 20px !important;
-            flex-shrink: 0 !important;
-            display: inline-block !important;
-            vertical-align: middle !important;
-            margin-right: 0 !important;
-        }}
-        </style>
-        <script>
-        (function() {{
-            const chartIcon = {chart_icon_js};
-            const searchIcon = {search_icon_js};
-            const infoIcon = {info_icon_js};
+        # Navigation Buttons - Centered
+        if st.button("Dashboard", key="nav_dashboard", use_container_width=True, 
+                    type="primary" if current_page == "Dashboard" else "secondary"):
+            st.session_state.current_page = "Dashboard"
+            st.rerun()
             
-            function injectIcon(button, iconHtml, buttonText) {{
-                // Check if icon already exists
-                if (button.querySelector('svg.iconly-icon')) {{
-                    return; // Icon already injected
-                }}
-                
-                // Remove triangle characters from button text
-                const walker = document.createTreeWalker(
-                    button,
-                    NodeFilter.SHOW_TEXT,
-                    null,
-                    false
-                );
-                
-                let textNode;
-                while (textNode = walker.nextNode()) {{
-                    if (textNode.textContent.includes('▼') || textNode.textContent.includes('▶')) {{
-                        textNode.textContent = textNode.textContent.replace(/[▼▶]/g, '').trim();
-                    }}
-                }}
-                
-                // Create a wrapper to parse the SVG
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = iconHtml;
-                const svg = tempDiv.querySelector('svg');
-                
-                if (svg) {{
-                    // Ensure the SVG has the iconly-icon class
-                    svg.classList.add('iconly-icon');
-                    
-                    // Insert SVG as the first child
-                    if (button.firstChild) {{
-                        button.insertBefore(svg, button.firstChild);
-                    }} else {{
-                        button.appendChild(svg);
-                    }}
-                    
-                    // Ensure flex layout
-                    button.style.display = 'flex';
-                    button.style.alignItems = 'center';
-                    button.style.gap = '8px';
-                }}
-            }}
+        if st.button("Settings", key="nav_settings", use_container_width=True, 
+                    type="primary" if current_page == "Settings" else "secondary"):
+            st.session_state.current_page = "Settings"
+            st.rerun()
             
-            function injectIcons() {{
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                if (!sidebar) return;
-                
-                // Find all buttons in sidebar - try multiple selectors
-                const allButtons = sidebar.querySelectorAll(
-                    '.stButton > button, ' +
-                    'button[data-testid*="baseButton"], ' +
-                    'button[data-testid*="stBaseButton"], ' +
-                    '[data-testid="stSidebar"] button'
-                );
-                
-                allButtons.forEach(btn => {{
-                    // Skip if button is not visible or already has icon
-                    if (!btn.offsetParent || btn.querySelector('svg.iconly-icon')) {{
-                        return;
-                    }}
-                    
-                    const text = btn.textContent.trim();
-                    const innerText = btn.innerText.trim();
-                    
-                    // Dashboard button - check both textContent and innerText
-                    if ((text.includes('Dashboard') || innerText.includes('Dashboard')) && 
-                        !text.includes('Overview') && !innerText.includes('Overview')) {{
-                        injectIcon(btn, chartIcon, 'Dashboard');
-                    }}
-                    // Error Log button
-                    else if (text === 'Error Log' || innerText === 'Error Log') {{
-                        injectIcon(btn, searchIcon, 'Error Log');
-                    }}
-                    // Help button
-                    else if (text === 'Help' || innerText === 'Help') {{
-                        injectIcon(btn, infoIcon, 'Help');
-                    }}
-                }});
-            }}
-            
-            // Run immediately
-            injectIcons();
-            
-            // Run on DOM ready
-            if (document.readyState === 'loading') {{
-                document.addEventListener('DOMContentLoaded', injectIcons);
-            }}
-            
-            // Watch for changes - more aggressive
-            let lastRun = 0;
-            const observer = new MutationObserver(() => {{
-                const now = Date.now();
-                if (now - lastRun > 50) {{ // Throttle to every 50ms
-                    lastRun = now;
-                    setTimeout(injectIcons, 10);
-                }}
-            }});
-            
-            observer.observe(document.body, {{
-                childList: true,
-                subtree: true,
-                characterData: true
-            }});
-            
-            // Also run periodically as backup
-            setInterval(injectIcons, 500);
-        }})();
-        
-        // Ensure System Info is at absolute bottom
-        (function() {{
-            function positionSystemInfo() {{
-                const sidebar = document.querySelector('[data-testid="stSidebar"]');
-                if (!sidebar) return;
-                
-                const systemInfo = sidebar.querySelector('.system-info-container');
-                if (systemInfo) {{
-                    const sidebarContent = sidebar.querySelector('> div:first-child');
-                    if (sidebarContent) {{
-                        sidebarContent.style.display = 'flex';
-                        sidebarContent.style.flexDirection = 'column';
-                        sidebarContent.style.height = '100vh';
-                        sidebarContent.style.minHeight = '100vh';
-                    }}
-                    
-                    // Find the markdown container and ensure it's at bottom
-                    let markdownContainer = systemInfo.closest('.stMarkdown');
-                    if (markdownContainer) {{
-                        markdownContainer.style.marginTop = 'auto';
-                        markdownContainer.style.flexShrink = '0';
-                        markdownContainer.style.marginBottom = '0';
-                    }}
-                    
-                    // Ensure System Info itself has rounded corners
-                    systemInfo.style.borderRadius = '0 0 16px 16px';
-                }}
-            }}
-            
-            if (document.readyState === 'loading') {{
-                document.addEventListener('DOMContentLoaded', positionSystemInfo);
-            }} else {{
-                positionSystemInfo();
-            }}
-            
-            const observer = new MutationObserver(() => {{
-                setTimeout(positionSystemInfo, 100);
-            }});
-            observer.observe(document.body, {{ childList: true, subtree: true }});
-        }})();
-        </script>
-        """, unsafe_allow_html=True)
-        
-        # Dashboard main button - triangle removed from text
-        if st.button("Dashboard", key="nav_dashboard_main", use_container_width=True, 
-                     type="primary" if dashboard_active else "secondary"):
-            st.session_state.dashboard_expanded = not st.session_state.dashboard_expanded
-            # If clicking on dashboard, set to Dashboard page
-            if not st.session_state.dashboard_expanded:
-                st.session_state.current_page = "Dashboard"
+        if st.button("Help", key="nav_help", use_container_width=True, 
+                    type="primary" if current_page == "Help" else "secondary"):
+            st.session_state.current_page = "Help"
             st.rerun()
         
-        # Show sub-menu items when expanded
-        if st.session_state.dashboard_expanded:
-            # Error Log
-            error_log_selected = current_page == "Error Log"
-            if st.button("Error Log", key="nav_error_log_sub", use_container_width=True,
-                       type="primary" if error_log_selected else "secondary"):
-                st.session_state.current_page = "Error Log"
-                st.rerun()
-            
-            # Help
-            help_selected = current_page == "Help"
-            if st.button("Help", key="nav_help_sub", use_container_width=True,
-                       type="primary" if help_selected else "secondary"):
-                st.session_state.current_page = "Help"
-                st.rerun()
+        # Spacer to push footer to bottom
+        st.markdown('<div style="flex: 1;"></div>', unsafe_allow_html=True)
         
         # Close navigation content wrapper
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # System Info at bottom of sidebar - Professional display
-        # Get trading status
-        trading_status = "🟢 Running" if trading_state.running else "⚪ Stopped"
+        # Get trading status for footer
+        status_text = "RUNNING" if trading_state.running else "STOPPED"
         status_color = "#00ff88" if trading_state.running else "#ff6b6b"
-        
-        # Add spacer to push System Info to bottom
-        st.markdown('<div style="flex: 1;"></div>', unsafe_allow_html=True)
+        status_icon = "🟢" if trading_state.running else "🔴"
         
         st.markdown(f"""
-        <div class="system-info-container" style="
-            padding: 20px 16px;
-            margin-bottom: 10px;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background: linear-gradient(180deg, transparent 0%, rgba(15, 12, 41, 0.8) 100%);
-            border-radius: 0 0 16px 16px;
-            flex-shrink: 0;
-        ">
-            <div style="margin-bottom: 8px;">
-                <p style="color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0;">Kiwi AI</p>
-                <p style="color: #b0b0b0; font-size: 11px; margin: 4px 0 0 0;">Trading System</p>
-            </div>
-            <div style="margin-top: 12px;">
-                <p style="color: #808080; font-size: 10px; margin: 4px 0;">Version 2.5.2</p>
-                <p style="color: {status_color}; font-size: 11px; font-weight: 500; margin: 6px 0 0 0;">{trading_status}</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="system-info-container" style="padding: 20px 16px; margin-bottom: 10px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1); background: linear-gradient(180deg, transparent 0%, rgba(15, 12, 41, 0.8) 100%); border-radius: 0 0 16px 16px; flex-shrink: 0;">
+<div style="margin-bottom: 12px;">
+<p style="color: #00d9ff; font-size: 14px; font-weight: 600; margin: 0;">Kiwi AI Trading System</p>
+<p style="color: #888; font-size: 11px; margin: 4px 0 0 0;">Version 2.5.3</p>
+</div>
+<div style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+<span style="font-size: 12px;">{status_icon}</span>
+<span style="color: {status_color}; font-size: 12px; font-weight: 600; letter-spacing: 1px;">{status_text}</span>
+</div>
+<div style="margin-top: 12px;">
+<button onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', value: 'error_log'}}, '*')" style="background: none; border: none; color: #666; font-size: 11px; cursor: pointer; text-decoration: underline;">
+View Error Log
+</button>
+</div>
+</div>
+""", unsafe_allow_html=True)
+        
+        # Handle Error Log click from footer (simulated via button above or just standard nav)
+        if st.session_state.get('show_error_log_footer'):
+            st.session_state.current_page = "Error Log"
+            st.session_state.show_error_log_footer = False
+            st.rerun()
+
         
         # Update page variable for routing
         page = st.session_state.current_page

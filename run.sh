@@ -8,6 +8,10 @@ cd "$SCRIPT_DIR"
 # Activate virtual environment
 source venv/bin/activate
 
+# Configure environment for Flatpak Chrome
+export PATH="$HOME/bin:$PATH"
+export BROWSER="$HOME/bin/google-chrome"
+
 # Run with Streamlit
 streamlit run run_kiwi.py
 
